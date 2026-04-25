@@ -41,7 +41,7 @@ export default function App() {
   const [editPrompt, setEditPrompt]   = useState(null);
   const [showIO, setShowIO]           = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme]             = useLocalStorage('pk_theme', 'light');
+  const [theme, setTheme]             = useLocalStorage('pk_theme', 'dark');
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
@@ -274,7 +274,7 @@ export default function App() {
         {/* Mobile Header */}
         <div className="mobile-header" style={{ background: '#2a2522' }}>
           <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: 24, padding: 4 }}>☰</button>
-          <div style={{ height: 24, display: 'flex', alignItems: 'center' }}>
+          <div style={{ height: 32, display: 'flex', alignItems: 'center' }}>
             <img src={logo} alt="Logo" style={{ height: '100%' }} />
           </div>
           <button className="btn btn-sm btn-c" onClick={openNew}>+</button>
@@ -293,9 +293,6 @@ export default function App() {
         }}>
           {/* Collection Info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span className="ft" style={{ fontSize: 13, fontWeight: 900, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              {catFilter === 'All' ? 'PROMPT VAULT' : catFilter}
-            </span>
             <span style={{ fontSize: 10, color: 'var(--text-sub)', fontWeight: 800, whiteSpace: 'nowrap' }}>
               {filtered.length} ITEMS
             </span>
