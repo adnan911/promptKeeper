@@ -274,9 +274,7 @@ export default function App() {
         {/* Mobile Header */}
         <div className="mobile-header" style={{ background: '#2a2522' }}>
           <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: 24, padding: 4 }}>☰</button>
-          <div style={{ height: 32, display: 'flex', alignItems: 'center' }}>
-            <img src={logo} alt="Logo" style={{ height: '100%' }} />
-          </div>
+          <div className="ft" style={{ fontSize: 18, fontWeight: 900, color: 'var(--text)', letterSpacing: -0.5 }}>PROMPT KEEPER</div>
           <button className="btn btn-sm btn-c" onClick={openNew}>+</button>
         </div>
 
