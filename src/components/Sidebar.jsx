@@ -44,7 +44,9 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
       background: 'var(--bg-sub)',
       borderRight: 'var(--nb-border)',
       overflowY: 'auto',
+      overflowX: 'hidden',
       zIndex: 100,
+      height: '100%',
     }}>
       {/* Mobile Close Button */}
       <button 
@@ -58,31 +60,32 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
       </div>
 
       {/* Stats */}
-      <div style={{ padding: '12px 16px', borderBottom: 'var(--nb-border-sm)', background: 'var(--bg)' }}>
+      <div style={{ padding: '12px 16px', borderBottom: 'var(--nb-border-sm)', background: '#2a2522' }}>
         <StatRow label="TOTAL PROMPTS" value={prompts.length} />
-        <StatRow label="FAVORITES" value={prompts.filter(p => p.fav).length} color="var(--pink)" />
+        <StatRow label="FAVORITES" value={prompts.filter(p => p.fav).length} color="var(--primary)" />
       </div>
 
-      {/* Collections */}
-      <div style={{ padding: '16px 14px 0', flex: 1, overflowY: 'auto' }}>
-        <div
-          className="ft"
-          onClick={() => setCatsExpanded(x => !x)}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 6px 10px', cursor: 'pointer' }}
-        >
-          <div style={{ fontSize: 10, color: 'var(--text)', fontWeight: 900, textTransform: 'uppercase' }}>Collections</div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button 
-              className="btn btn-sm" 
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsAddingCat(true);
-              }}
-              style={{ padding: '2px 8px', fontSize: 10, background: 'var(--accent)' }}
-            >+ ADD</button>
-            <span style={{ fontSize: 12 }}>{catsExpanded ? '▾' : '▸'}</span>
+      <div style={{ padding: '16px 0', flex: 1 }}>
+        {/* Collections Box */}
+        <div style={{ background: '#2a2522', border: 'var(--nb-border-sm)', margin: '0 12px 16px', padding: '12px 10px', boxShadow: 'var(--nb-shadow-sm)' }}>
+          <div
+            className="ft"
+            onClick={() => setCatsExpanded(x => !x)}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 6px 10px', cursor: 'pointer' }}
+          >
+            <div style={{ fontSize: 10, color: 'var(--text)', fontWeight: 900, textTransform: 'uppercase' }}>Collections</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button 
+                className="btn btn-sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsAddingCat(true);
+                }}
+                style={{ padding: '2px 8px', fontSize: 10, background: 'var(--accent)' }}
+              >+ ADD</button>
+              <span style={{ fontSize: 12, color: 'var(--text)' }}>{catsExpanded ? '▾' : '▸'}</span>
+            </div>
           </div>
-        </div>
 
         {isAddingCat && (
           <div style={{ padding: '0 6px 12px', display: 'flex', gap: 6 }}>
@@ -198,9 +201,10 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
             </div>
           );
         })}
+        </div>
 
-        <Divider margin="16px 0" />
-
+        {/* AI Models Box */}
+        <div style={{ background: '#2a2522', border: 'var(--nb-border-sm)', margin: '0 12px 16px', padding: '12px 10px', boxShadow: 'var(--nb-shadow-sm)' }}>
         <div 
           className="ft" 
           onClick={() => setModelsExpanded(x => !x)}
@@ -269,7 +273,7 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
                     <span style={{ fontSize: 11, fontWeight: 900, opacity: isAM ? 1 : 0.6 }}>
                       {modelCount(m)}
                     </span>
-                    {editingCat === m ? ( // Using editingCat state but for model logic to avoid new state
+                    {editingCat === m ? (
                       <div style={{ display: 'flex', gap: 4 }}>
                         <input
                           autoFocus
@@ -351,21 +355,21 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
             })}
           </>
         )}
+        </div>
 
-        {/* Tags */}
+        {/* Tags Box */}
         {allTags.length > 0 && (
-          <>
-            <Divider margin="16px 0" />
+          <div style={{ background: '#2a2522', border: 'var(--nb-border-sm)', margin: '0 12px 16px', padding: '12px 10px', boxShadow: 'var(--nb-shadow-sm)' }}>
             <div
               className="ft"
               onClick={() => setTagsExpanded(x => !x)}
               style={{ fontSize: 10, color: 'var(--text)', fontWeight: 900, padding: '0 6px 10px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
             >
               <span>TAGS</span>
-              <span style={{ fontSize: 12 }}>{tagsExpanded ? '▾' : '▸'}</span>
+              <span style={{ fontSize: 12, color: 'var(--text)' }}>{tagsExpanded ? '▾' : '▸'}</span>
             </div>
             {tagsExpanded && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '4px 6px 16px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '4px 6px 4px' }}>
                 {allTags.map(t => (
                   <div key={t} className="tag-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <TagPill
@@ -402,14 +406,14 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
                               setEditingTag(t);
                               setEditTagVal(t);
                             }}
-                            style={{ background: 'var(--violet)', color: '#fff', border: '1px solid #000', padding: '0 4px', fontSize: 8, fontWeight: 900, cursor: 'pointer' }}
+                            style={{ background: 'var(--accent)', color: '#000', border: '1px solid #000', borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, cursor: 'pointer' }}
                           >✎</button>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm(`DELETE TAG #${t} GLOBALLY?`)) onDeleteTag(t);
+                              if (confirm(`DELETE TAG "${t}"?`)) onDeleteTag(t);
                             }}
-                            style={{ background: 'var(--danger)', color: '#fff', border: '1px solid #000', padding: '0 4px', fontSize: 8, fontWeight: 900, cursor: 'pointer' }}
+                            style={{ background: 'var(--danger)', color: '#fff', border: '1px solid #000', borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, cursor: 'pointer' }}
                           >✕</button>
                         </>
                       )}
@@ -418,7 +422,7 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
                 ))}
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 

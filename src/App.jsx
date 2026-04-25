@@ -275,7 +275,7 @@ export default function App() {
         <div className="mobile-header" style={{ background: '#2a2522' }}>
           <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: 24, padding: 4 }}>☰</button>
           <div className="ft" style={{ fontSize: 18, fontWeight: 900, color: 'var(--text)', letterSpacing: -0.5 }}>PROMPT KEEPER</div>
-          <button className="btn btn-sm btn-c" onClick={openNew}>+</button>
+          <button className="btn btn-c" onClick={openNew} style={{ width: 36, height: 36, fontSize: 20, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
         </div>
 
         {/* Unified Toolbar Row */}
