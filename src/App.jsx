@@ -293,19 +293,9 @@ export default function App() {
         }}>
           {/* Collection Info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ 
-              background: catFilter === 'All' ? 'var(--accent)' : (categoryColors[catFilter] || categoryColors['All']), 
-              padding: '6px 16px', 
-              border: 'var(--nb-border-sm)', 
-              boxShadow: '2px 2px 0px 0px #000',
-              display: 'inline-flex',
-              alignItems: 'center',
-              height: 36
-            }}>
-              <span className="ft" style={{ fontSize: 13, fontWeight: 900, color: '#000', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                {catFilter === 'All' ? 'PROMPT VAULT' : catFilter}
-              </span>
-            </div>
+            <span className="ft" style={{ fontSize: 13, fontWeight: 900, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {catFilter === 'All' ? 'PROMPT VAULT' : catFilter}
+            </span>
             <span style={{ fontSize: 10, color: 'var(--text-sub)', fontWeight: 800, whiteSpace: 'nowrap' }}>
               {filtered.length} ITEMS
             </span>
