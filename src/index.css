@@ -1,19 +1,19 @@
 :root {
-  --bg: #1E4445;
-  --bg-sub: #233436;
+  --bg: #1A1614;
+  --bg-sub: #24201D;
   --nb-border: 2px solid #000000;
   --nb-border-sm: 1.5px solid #000000;
   --nb-shadow: 4px 4px 0px 0px #000000;
   --nb-shadow-sm: 2px 2px 0px 0px #000000;
   --nb-shadow-lg: 6px 6px 0px 0px #000000;
   
-  --primary: #EBA328; /* Golden */
-  --secondary: #AB6937; /* Rust/Rust-Orange */
-  --accent: #E8C2B3; /* Muted Rose */
-  --pink: #EDD8DF; /* Soft Cream/Pink */
+  --primary: #C5A059; /* Brand Gold */
+  --secondary: #3B82F6; /* DeepSeek (re-standardized) */
+  --accent: #B49156; /* Muted Gold */
+  --pink: #E8C2B3; 
   --danger: #7a2e1e;
   --violet: #AB6937;
-  --copy-color: #F25C05; /* Persimmon */
+  --copy-color: #C5A059; /* Match Brand Gold */
   
   --text: #EDD8DF;
   --text-sub: #E8C2B3;

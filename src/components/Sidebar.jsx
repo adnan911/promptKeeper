@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { TagPill, ModelBadge, StatRow, Divider } from './UI.jsx';
 import { MODEL_COLORS, PREMIUM_GRADIENTS } from '../data.js';
+import logo from '../assets/logo.jpg';
 
 export default function Sidebar({ prompts, categories, catFilter, setCatFilter, modelFilter, setModelFilter, tagFilter, setTagFilter, onNew, onImportExport, isOpen, onClose, catColors, setCatColor, onAddCat, onRenameCat, onDeleteCat, onRenameTag, onDeleteTag, onReorderCat, modelColors, onAddModel, onUpdateModelColor, onRenameModel, onDeleteModel }) {
   const [tagsExpanded, setTagsExpanded] = useState(true);
@@ -52,10 +53,8 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
         className="show-mobile-flex"
       >✕</button>
       {/* Logo */}
-      <div style={{ padding: '24px 20px 20px', borderBottom: 'var(--nb-border-sm)', background: 'var(--primary)' }}>
-        <div className="ft" style={{ fontSize: 24, fontWeight: 900, color: '#000', letterSpacing: -0.5, lineHeight: 0.9 }}>PROMPT</div>
-        <div className="ft" style={{ fontSize: 24, fontWeight: 900, color: '#000', letterSpacing: -0.5, lineHeight: 1.1 }}>KEEPER</div>
-        <div className="ft" style={{ fontSize: 10, color: '#000', letterSpacing: 1, marginTop: 6, fontWeight: 700 }}>VAULT v1.0</div>
+      <div style={{ padding: '24px 20px 20px', borderBottom: 'var(--nb-border-sm)', background: 'var(--bg)' }}>
+        <img src={logo} alt="Prompt Keeper" style={{ width: '100%', display: 'block' }} />
       </div>
 
       {/* Stats */}

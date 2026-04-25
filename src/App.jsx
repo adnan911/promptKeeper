@@ -4,6 +4,7 @@ import PromptCard from './components/PromptCard.jsx';
 import DetailPanel from './components/DetailPanel.jsx';
 import PromptModal from './components/PromptModal.jsx';
 import ImportExportModal from './components/ImportExportModal.jsx';
+import logo from './assets/logo.jpg';
 import { Toast } from './components/UI.jsx';
 import { useLocalStorage, useToast, useKeyboard } from './hooks.js';
 import { SEED_PROMPTS, DEFAULT_CAT_COLORS } from './data.js';
@@ -273,7 +274,9 @@ export default function App() {
         {/* Mobile Header */}
         <div className="mobile-header">
           <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: 24, padding: 4 }}>☰</button>
-          <div className="ft" style={{ fontSize: 16, fontWeight: 900 }}>PROMPT KEEPER</div>
+          <div style={{ height: 24, display: 'flex', alignItems: 'center' }}>
+            <img src={logo} alt="Logo" style={{ height: '100%' }} />
+          </div>
           <button className="btn btn-sm btn-c" onClick={openNew}>+</button>
         </div>
 

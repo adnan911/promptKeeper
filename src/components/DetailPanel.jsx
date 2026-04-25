@@ -70,7 +70,7 @@ export default function DetailPanel({ p, onClose, onEdit, onDelete, onFav, onCop
               className="btn btn-fw"
               style={{ background: p.fav ? 'var(--primary)' : 'var(--bg-sub)', color: p.fav ? '#000' : 'var(--text)', border: 'var(--nb-border-sm)', fontWeight: 900 }}
             >
-              {p.fav ? '★ FAVORITED' : '☆ ADD TO FAVORITES'}
+              <span style={{ color: p.fav ? '#FFD700' : 'inherit' }}>{p.fav ? '★' : '☆'}</span> {p.fav ? 'FAVORITED' : 'ADD TO FAVORITES'}
             </button>
         </div>
 

@@ -35,24 +35,19 @@ export default function PromptCard({ p, isActive, onClick, onFav, onCopy, modelC
         </div>
         <button
           onClick={e => { e.stopPropagation(); onFav(p.id); }}
-          style={{ background: 'var(--bg-sub)', border: '1px solid var(--text)', fontSize: 14, color: p.fav ? 'var(--danger)' : 'var(--text)', padding: '1px 5px', transition: 'all .15s', flexShrink: 0, boxShadow: '1px 1px 0px 0px #000' }}
+          style={{ background: 'var(--bg-sub)', border: '1px solid var(--text)', fontSize: 14, color: p.fav ? '#FFD700' : 'var(--text)', padding: '1px 5px', transition: 'all .15s', flexShrink: 0, boxShadow: '1px 1px 0px 0px #000' }}
         >
           {p.fav ? '★' : '☆'}
         </button>
       </div>
-
-      {/* Model */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <ModelBadge model={p.model} color={modelColors?.[p.model]} />
-      </div>
-
       {/* Preview */}
       <div style={{ fontSize: 11, color: isActive ? '#000' : 'var(--text-sub)', lineHeight: 1.4, fontWeight: 500, flexGrow: 1, padding: '4px 8px', borderLeft: '2px solid var(--primary)' }}>
         {preview}
       </div>
 
-      {/* Tags */}
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+      {/* Tags & Model */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <ModelBadge model={p.model} color={modelColors?.[p.model]} size="sm" />
         {p.tags.slice(0, 3).map(t => <TagPill key={t} tag={t} size="sm" />)}
         {p.tags.length > 3 && (
           <span style={{ fontSize: 8, color: 'var(--text-dim)', alignSelf: 'center', fontWeight: 800 }}>+{p.tags.length - 3}</span>

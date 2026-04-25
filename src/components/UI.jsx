@@ -31,21 +31,21 @@ function varColorToHex(c) {
   return c;
 }
 
-export function ModelBadge({ model, color }) {
+export function ModelBadge({ model, color, size = 'md' }) {
   const c = color || MODEL_COLORS[model] || '#cccccc';
   return (
     <span style={{
       background: c,
       border: 'var(--nb-border-sm)',
       color: '#000',
-      padding: '2px 8px',
+      padding: size === 'sm' ? '3px 8px' : '4px 12px',
       borderRadius: 0,
-      fontSize: 9,
+      fontSize: size === 'sm' ? 9 : 10,
       fontFamily: 'JetBrains Mono, monospace',
       fontWeight: 800,
       textTransform: 'uppercase',
       whiteSpace: 'nowrap',
-      boxShadow: '1px 1px 0px 0px #000',
+      boxShadow: size === 'sm' ? '1px 1px 0px 0px #000' : 'var(--nb-shadow-sm)',
     }}>
       {model}
     </span>
