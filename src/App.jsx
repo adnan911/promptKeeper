@@ -6,6 +6,7 @@ import PromptModal from './components/PromptModal.jsx';
 import ImportExportModal from './components/ImportExportModal.jsx';
 import logo from './assets/logo.jpg';
 import { Toast } from './components/UI.jsx';
+import OnboardingModal from './components/OnboardingModal.jsx';
 import { useLocalStorage, useToast, useKeyboard } from './hooks.js';
 import { SEED_PROMPTS, DEFAULT_CAT_COLORS } from './data.js';
 
@@ -17,7 +18,8 @@ const SORT_OPTIONS = [
 ];
 
 export default function App() {
-  const [prompts, setPrompts] = useLocalStorage('pk_prompts_v2', SEED_PROMPTS);
+  const [prompts, setPrompts] = useLocalStorage('pk_prompts_v2', []);
+  const [onboardingDone, setOnboardingDone] = useLocalStorage('pk_onboarding_v1', false);
   const [categories, setCategories] = useLocalStorage('pk_categories', ['All', 'Coding', 'Creative', 'Business', 'System', 'Research', 'Personal']);
   const [categoryColors, setCategoryColors] = useLocalStorage('pk_cat_colors', DEFAULT_CAT_COLORS);
   const [modelColors, setModelColors] = useLocalStorage('pk_model_colors', {
@@ -126,8 +128,9 @@ export default function App() {
     setPrompts(prev => prev.map(p => p.id === id ? { ...p, fav: !p.fav } : p));
   }, []);
 
-  const copyPrompt = useCallback((p, withVars = false) => {
-    navigator.clipboard.writeText(p.body).catch(() => {});
+  const copyPrompt = useCallback((p, withVars = false, customText = null) => {
+    const textToCopy = customText || p.body;
+    navigator.clipboard.writeText(textToCopy).catch(() => {});
     setPrompts(prev => prev.map(x =>
       x.id === p.id ? { ...x, uses: x.uses + 1, history: [...(x.history || []), x.uses + 1] } : x
     ));
@@ -142,6 +145,15 @@ export default function App() {
     });
     toast(`Imported ${imported.length} prompts ✓`, 'cyan');
   }, []);
+
+  const handleOnboarding = useCallback((choice) => {
+    if (choice === 'demo') {
+      setPrompts(SEED_PROMPTS);
+    } else {
+      setPrompts([]);
+    }
+    setOnboardingDone(true);
+  }, [setPrompts, setOnboardingDone]);
 
   const addCategory = useCallback((name) => {
     if (!name || categories.includes(name)) return;
@@ -382,6 +394,7 @@ export default function App() {
       {showIO && <ImportExportModal prompts={prompts} onImport={importPrompts} onClose={() => setShowIO(false)} />}
 
       <Toast toasts={toasts} />
+      {!onboardingDone && <OnboardingModal onChoose={handleOnboarding} />}
 
       {!showModal && !showIO && (
         <button

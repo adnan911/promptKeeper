@@ -13,14 +13,12 @@ export default function DetailPanel({ p, onClose, onEdit, onDelete, onFav, onCop
   const allFilled = vars.every(v => varVals[v]?.trim());
 
   function copyFilled() {
-    navigator.clipboard.writeText(filled).catch(() => {});
-    onCopy(p, true);
+    onCopy(p, true, filled);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
 
   function copyRaw() {
-    navigator.clipboard.writeText(p.body).catch(() => {});
     onCopy(p, false);
   }
 
