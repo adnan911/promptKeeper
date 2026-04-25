@@ -272,7 +272,7 @@ export default function App() {
 
       <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         {/* Mobile Header */}
-        <div className="mobile-header">
+        <div className="mobile-header" style={{ background: '#2a2522' }}>
           <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: 24, padding: 4 }}>☰</button>
           <div style={{ height: 24, display: 'flex', alignItems: 'center' }}>
             <img src={logo} alt="Logo" style={{ height: '100%' }} />

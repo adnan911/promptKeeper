@@ -53,7 +53,7 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
         className="show-mobile-flex"
       >✕</button>
       {/* Logo */}
-      <div style={{ padding: '24px 20px 20px', borderBottom: 'var(--nb-border-sm)', background: 'var(--bg)' }}>
+      <div style={{ padding: '24px 20px 20px', borderBottom: 'var(--nb-border-sm)', background: '#2a2522' }}>
         <img src={logo} alt="Prompt Keeper" style={{ width: '100%', display: 'block' }} />
       </div>
 

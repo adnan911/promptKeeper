@@ -234,7 +234,7 @@ input:focus, textarea:focus {
 .mobile-header {
   display: none;
   padding: 12px 16px;
-  background: #2a2522;
+  background: #2a2522 !important;
   color: var(--text);
   border-bottom: var(--nb-border);
   align-items: center;
