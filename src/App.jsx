@@ -4,6 +4,7 @@ import PromptCard from './components/PromptCard.jsx';
 import DetailPanel from './components/DetailPanel.jsx';
 import PromptModal from './components/PromptModal.jsx';
 import ImportExportModal from './components/ImportExportModal.jsx';
+import ForgeStudio from './components/ForgeStudio.jsx';
 import logo from './assets/logo.jpg';
 import { Toast, ConfirmModal } from './components/UI.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
@@ -43,6 +44,8 @@ export default function App() {
   const [editPrompt, setEditPrompt]   = useState(null);
   const [showIO, setShowIO]           = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
+  const [isStudioView, setIsStudioView] = useState(false);
   const [theme, setTheme]             = useLocalStorage('pk_theme', 'dark');
   const [confirmConfig, setConfirmConfig] = useState(null);
 
@@ -59,7 +62,14 @@ export default function App() {
   useKeyboard({
     'cmd+n': () => openNew(),
     'cmd+k': () => document.getElementById('search-input')?.focus(),
-    'escape': () => { setActiveId(null); setShowModal(false); setShowIO(false); setSidebarOpen(false); },
+    'escape': () => { 
+      setActiveId(null); 
+      setShowModal(false); 
+      setShowIO(false); 
+      setSidebarOpen(false); 
+      setFabOpen(false);
+      setIsStudioView(false);
+    },
   });
 
   const activePrompt = useMemo(() => prompts.find(p => p.id === activeId), [prompts, activeId]);
@@ -295,7 +305,7 @@ export default function App() {
         <div className="mobile-header" style={{ background: '#2a2522' }}>
           <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: 24, padding: 4 }}>☰</button>
           <div className="ft" style={{ fontSize: 18, fontWeight: 900, color: 'var(--text)', letterSpacing: -0.5 }}>PROMPT KEEPER</div>
-          <button className="btn btn-c" onClick={openNew} style={{ width: 36, height: 36, fontSize: 20, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+          <div style={{ width: 32 }}></div> {/* Spacer to keep title centered */}
         </div>
 
         {/* Unified Toolbar Row */}
@@ -343,9 +353,6 @@ export default function App() {
                 ✕
               </button>
             )}
-            <button className="btn btn-c btn-sm hide-mobile" onClick={openNew} style={{ padding: '0 20px', height: 40 }}>
-              + NEW
-            </button>
           </div>
         </div>
 
@@ -402,6 +409,15 @@ export default function App() {
       {showModal && <PromptModal initial={editPrompt} prompts={prompts} categories={categories} modelColors={modelColors} onSave={savePrompt} onClose={() => { setShowModal(false); setEditPrompt(null); }} onAddCat={addCategory} onAddModel={addModel} />}
       {showIO && <ImportExportModal prompts={prompts} onImport={importPrompts} onClose={() => setShowIO(false)} />}
       
+      {isStudioView && (
+        <ForgeStudio 
+          categories={categories} 
+          modelColors={modelColors} 
+          onSave={(p) => { savePrompt(p); setIsStudioView(false); }} 
+          onClose={() => setIsStudioView(false)} 
+        />
+      )}
+      
       {confirmConfig && (
         <ConfirmModal 
           {...confirmConfig} 
@@ -416,23 +432,26 @@ export default function App() {
       <Toast toasts={toasts} />
       {!onboardingDone && <OnboardingModal onChoose={handleOnboarding} />}
 
-      {!showModal && !showIO && (
-        <button
-          className="btn hide-mobile"
-          onClick={openNew}
-          title="New Prompt (⌘N)"
-          style={{
-            position: 'fixed', bottom: 32,
-            right: activePrompt ? 384 : 32,
-            width: 64, height: 64, borderRadius: '50%',
-            background: 'var(--primary)',
-            border: 'none',
-            color: '#000', fontSize: 32,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: 'var(--shadow-primary)',
-            zIndex: 50,
-          }}
-        >+</button>
+      {!showModal && !showIO && !isStudioView && !activePrompt && (
+        <div className={`fab-container ${fabOpen ? 'open' : ''}`} style={{ right: activePrompt && window.innerWidth > 768 ? 432 : 32 }}>
+          <div className="fab-menu">
+            <button className="fab-item" onClick={() => { setFabOpen(false); setIsStudioView(true); }}>
+              <div className="fab-icon">⚡</div>
+              JSON EDITOR
+            </button>
+            <button className="fab-item" onClick={() => { setFabOpen(false); openNew(); }}>
+              <div className="fab-icon">✏️</div>
+              NEW PROMPT
+            </button>
+          </div>
+          <button
+            className="fab-trigger afu"
+            onClick={() => setFabOpen(!fabOpen)}
+            title="Create Menu (⌘N)"
+          >
+            <span>+</span>
+          </button>
+        </div>
       )}
     </div>
   );

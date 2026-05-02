@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Prompt Keeper</string>
+    <string name="title_activity_main">Prompt Keeper</string>
+    <string name="package_name">com.adnan.promptkeeper</string>
+    <string name="custom_url_scheme">com.adnan.promptkeeper</string>
+</resources>

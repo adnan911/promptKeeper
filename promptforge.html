@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PromptForge — JSON Variable Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET & BASE ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Syne', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: var(--bg);
+  color: var(--tx);
+  transition: background .2s, color .2s;
+}
+button { font-family: inherit; cursor: pointer; }
+input, textarea, select { font-family: inherit; }
+pre { font-family: 'JetBrains Mono', monospace; }
+code { font-family: 'JetBrains Mono', monospace; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--s4); border-radius: 99px; }
+
+/* ── THEME VARS ───────────────────────────────── */
+[data-theme="dark"] {
+  --bg: #0a0a0c; --s1: #111116; --s2: #18181d; --s3: #222228; --s4: #2e2e36; --s5: #3a3a44;
+  --bd: rgba(255,255,255,.07); --bh: rgba(255,255,255,.04); --bh2: rgba(255,255,255,.08);
+  --tx: #f4f4f5; --tx2: #a1a1aa; --tx3: #52525b;
+}
+[data-theme="light"] {
+  --bg: #f0f0f4; --s1: #e8e8ec; --s2: #dcdce2; --s3: #d0d0d8; --s4: #b8b8c2; --s5: #9898a8;
+  --bd: rgba(0,0,0,.09); --bh: rgba(0,0,0,.04); --bh2: rgba(0,0,0,.08);
+  --tx: #18181b; --tx2: #52525b; --tx3: #a1a1aa;
+}
+[data-theme="amoled"] {
+  --bg: #000; --s1: #080808; --s2: #0e0e0e; --s3: #141414; --s4: #1c1c1c; --s5: #242424;
+  --bd: rgba(255,255,255,.055); --bh: rgba(255,255,255,.025); --bh2: rgba(255,255,255,.05);
+  --tx: #f4f4f5; --tx2: #a1a1aa; --tx3: #52525b;
+}
+
+/* ── CONSTANTS ────────────────────────────────── */
+:root { --or: #f97316; }
+
+/* ── LAYOUT ───────────────────────────────────── */
+#app {
+  position: relative; z-index: 1;
+  height: 100vh; display: flex; flex-direction: column;
+}
+#bg-mesh {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 10% 0%, rgba(249,115,22,.09), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 90% 100%, rgba(249,115,22,.06), transparent 50%),
+    var(--bg);
+}
+
+/* ── GLASS ────────────────────────────────────── */
+.glass {
+  background: var(--bh);
+  border: 1px solid var(--bd);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.glass2 {
+  background: rgba(30,30,38,.92);
+  border: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+}
+[data-theme="light"] .glass2 {
+  background: rgba(255,255,255,.92);
+}
+
+/* ── HEADER ───────────────────────────────────── */
+#header {
+  position: relative; z-index: 1;
+  border-bottom: 1px solid var(--bd);
+  padding: 0 14px; height: 55px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo {
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 33px; height: 33px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg,#f97316,#fb923c);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 14px rgba(249,115,22,.4);
+}
+.logo-text-main { font-size: 16px; font-weight: 800; letter-spacing: -.025em; line-height: 1.1; }
+.logo-text-sub { font-size: 9px; color: var(--tx3); letter-spacing: .08em; text-transform: uppercase; }
+#header-right { display: flex; align-items: center; gap: 5px; }
+.live-badge {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 99px;
+  background: rgba(74,222,128,.07); border: 1px solid rgba(74,222,128,.17);
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #4ade80; box-shadow: 0 0 7px rgba(74,222,128,.55);
+  animation: pfPulse 2s infinite; flex-shrink: 0;
+}
+.live-text { font-size: 9px; color: #4ade80; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+
+/* ── BUTTONS ──────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  border-radius: 8px; font-size: 12px; font-weight: 700;
+  cursor: pointer; white-space: nowrap; border: none;
+  transition: all .15s; font-family: inherit;
+}
+.btn-primary {
+  background: var(--or); color: #fff;
+  box-shadow: 0 2px 12px rgba(249,115,22,.35);
+  padding: 7px 14px;
+}
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-ghost {
+  background: var(--bh); border: 1.5px solid var(--bd);
+  color: var(--tx2); padding: 7px 14px;
+}
+.btn-ghost:hover { background: var(--bh2); }
+.btn-danger {
+  background: rgba(239,68,68,.09); border: 1.5px solid rgba(239,68,68,.2);
+  color: #f87171; padding: 7px 10px;
+}
+.btn-danger:hover { background: rgba(239,68,68,.15); }
+.btn-orange {
+  background: rgba(249,115,22,.10); border: 1.5px solid rgba(249,115,22,.28);
+  color: var(--or); padding: 7px 12px;
+}
+.btn-orange:hover { background: rgba(249,115,22,.18); }
+.btn-icon { padding: 7px; border-radius: 7px; }
+.btn-sm { padding: 3px 8px; font-size: 11px; gap: 3px; }
+.btn-xs { padding: 3px 7px; font-size: 10px; gap: 3px; }
+.btn-badge {
+  position: relative;
+}
+.btn-badge .badge {
+  position: absolute; top: -4px; right: -4px;
+  min-width: 16px; height: 16px; border-radius: 99px;
+  background: var(--or); color: #fff;
+  font-size: 9px; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 3px;
+}
+
+/* ── TAG ──────────────────────────────────────── */
+.tag {
+  display: inline-flex; align-items: center;
+  padding: 2px 7px; border-radius: 99px;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase;
+}
+
+/* ── INPUTS ───────────────────────────────────── */
+.inp {
+  width: 100%;
+  background: var(--bh); border: 1.5px solid var(--s4);
+  border-radius: 9px; color: var(--tx); font-size: 13px;
+  padding: 9px 13px; font-family: inherit;
+  transition: border-color .15s; outline: none;
+}
+.inp:focus { border-color: var(--or); }
+.inp::placeholder { color: var(--tx3); }
+
+/* ── DESKTOP 3-COL ────────────────────────────── */
+#desktop-layout {
+  display: grid; grid-template-columns: 1fr 290px 1fr;
+  flex: 1; overflow: hidden; min-height: 0;
+  position: relative; z-index: 1;
+}
+#col-input { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--bd); }
+#col-vars { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--bd); background: rgba(0,0,0,.07); }
+#col-output { display: flex; flex-direction: column; overflow: hidden; }
+
+.panel-header {
+  padding: 9px 12px 6px;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.panel-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--tx3);
+}
+.panel-divider { height: 1px; background: var(--bd); flex-shrink: 0; }
+
+/* ── JSON INPUT ───────────────────────────────── */
+#json-textarea {
+  flex: 1; min-height: 0; padding: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; line-height: 1.82; resize: none;
+}
+#input-body { flex: 1; padding: 0 10px 10px; min-height: 0; display: flex; flex-direction: column; }
+.err-box {
+  margin: 0 10px 6px;
+  padding: 7px 10px; border-radius: 7px;
+  background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.13);
+  font-size: 11px; color: #fca5a5; line-height: 1.5;
+  font-family: 'JetBrains Mono', monospace; flex-shrink: 0;
+}
+
+/* ── VARS PANEL ───────────────────────────────── */
+#vars-toolbar { padding: 10px 12px; flex-shrink: 0; }
+#vars-progress-row {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;
+}
+#vars-progress-track {
+  height: 5px; background: var(--s3); border-radius: 99px; overflow: hidden;
+}
+#vars-progress-bar {
+  height: 100%; border-radius: 99px;
+  transition: width .35s ease, background .35s ease;
+  background: linear-gradient(90deg,#f97316,#fb923c);
+  box-shadow: 0 0 8px rgba(249,115,22,.35);
+}
+#vars-filter-wrap { padding: 0 10px 8px; flex-shrink: 0; position: relative; }
+#vars-filter { padding-left: 27px; font-size: 12px; }
+.filter-icon {
+  position: absolute; left: 19px; top: 50%; transform: translateY(-50%);
+  color: var(--tx3); pointer-events: none;
+}
+#vars-list { flex: 1; overflow-y: auto; min-height: 0; padding: 7px 9px; }
+.var-item {
+  border-radius: 10px; padding: 11px 12px;
+  border: 1.5px solid transparent;
+  background: transparent;
+  margin-bottom: 4px; transition: all .15s;
+}
+.var-item.filled { border-color: rgba(74,222,128,.14); background: rgba(74,222,128,.025); }
+.var-item.expanded { border-color: rgba(249,115,22,.2); }
+.var-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.var-name-row { display: flex; align-items: center; gap: 6px; }
+.var-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: var(--s5); transition: all .15s;
+}
+.var-dot.done { background: #4ade80; box-shadow: 0 0 7px rgba(74,222,128,.5); }
+.var-name { font-size: 11.5px; font-family: 'JetBrains Mono', monospace; color: var(--or); font-weight: 600; }
+.var-controls { display: flex; gap: 4px; align-items: center; }
+.type-toggle {
+  font-size: 10px; padding: 2px 6px; border-radius: 5px; cursor: pointer;
+  background: var(--bh); border: 1px solid var(--bd); color: var(--tx3);
+  display: flex; align-items: center; gap: 3px; transition: all .15s;
+}
+.type-toggle.active { background: rgba(249,115,22,.10); border-color: rgba(249,115,22,.28); color: var(--or); }
+.var-type-picker { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+.type-btn {
+  font-size: 10px; padding: 3px 7px; border-radius: 5px; cursor: pointer;
+  border: 1.5px solid var(--bd); color: var(--tx3); background: transparent;
+  transition: all .15s;
+}
+.type-btn.active { border-color: var(--or); color: var(--or); background: rgba(249,115,22,.10); }
+.var-paths { margin-top: 5px; font-size: 9.5px; color: var(--tx3); font-family: 'JetBrains Mono', monospace; }
+.var-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; flex: 1; padding: 28px; text-align: center; gap: 10px;
+}
+
+/* ── OUTPUT ───────────────────────────────────── */
+#output-body { flex: 1; overflow-y: auto; min-height: 0; padding: 11px 12px; }
+.highout {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px; line-height: 1.85; color: var(--tx2);
+  white-space: pre-wrap; word-break: break-word;
+}
+.highout-unfilled {
+  background: rgba(249,115,22,.12); color: #fb923c;
+  border-radius: 4px; padding: 0 3px;
+  border: 1px solid rgba(249,115,22,.3);
+}
+.out-placeholder { color: var(--tx3); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+/* ── FOOTER ───────────────────────────────────── */
+#footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--bd);
+  padding: 4px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 9px; color: var(--tx3); flex-shrink: 0;
+}
+#footer-left { display: flex; gap: 10px; align-items: center; }
+#footer-right { display: flex; gap: 10px; align-items: center; }
+.act-indicator { color: var(--or); display: flex; align-items: center; gap: 4px; }
+.act-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--or); display: inline-block; }
+
+/* ── MOBILE LAYOUT ────────────────────────────── */
+#mobile-layout {
+  flex: 1; display: none; flex-direction: column;
+  overflow: hidden; min-height: 0;
+  position: relative; z-index: 1;
+}
+.step-bar {
+  padding: 11px 16px 9px;
+  display: flex; align-items: center; justify-content: center;
+}
+.step-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.step-circle {
+  width: 27px; height: 27px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--s4); color: var(--tx3);
+  font-size: 12px; font-weight: 800;
+  box-shadow: none; transition: all .3s;
+}
+.step-circle.done, .step-circle.active {
+  background: var(--or); color: #fff;
+}
+.step-circle.active { box-shadow: 0 0 12px rgba(249,115,22,.45); }
+.step-label {
+  font-size: 9px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--tx3); transition: color .3s;
+}
+.step-label.active { color: var(--or); }
+.step-connector {
+  width: 48px; height: 2px; margin: 0 5px; margin-bottom: 17px;
+  border-radius: 99px; background: var(--s4); transition: background .3s;
+}
+.step-connector.done { background: var(--or); }
+.mob-step-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.mob-footer {
+  padding: 10px 12px; border-top: 1px solid var(--bd);
+  flex-shrink: 0; display: flex; gap: 8px;
+}
+
+/* ── OVERLAY / SHEET ──────────────────────────── */
+.overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.72);
+  display: flex; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.sheet {
+  width: 100%; max-width: 520px;
+  border-radius: 20px 20px 0 0; overflow: hidden;
+  max-height: 88vh; display: flex; flex-direction: column;
+  box-shadow: 0 -4px 40px rgba(0,0,0,.5), 0 0 30px rgba(249,115,22,.10);
+}
+.sheet.wide { max-width: 640px; }
+.sheet-head {
+  padding: 16px 20px 0;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-shrink: 0;
+}
+.sheet-title { font-size: 17px; font-weight: 800; letter-spacing: -.02em; color: var(--tx); }
+.sheet-sub { font-size: 11px; color: var(--tx3); margin-top: 2px; }
+.sheet-body { flex: 1; overflow-y: auto; }
+.modal-row { margin-bottom: 12px; }
+.modal-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--tx3); margin-bottom: 6px;
+}
+.modal-footer { padding: 0 20px 20px; display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── TOAST ────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 70px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: none; align-items: center; gap: 9px;
+  padding: 10px 16px; border-radius: 12px;
+  font-size: 13px; font-weight: 600;
+  pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,.55);
+  white-space: nowrap;
+}
+#toast.show { display: flex; }
+
+/* ── CONFETTI ─────────────────────────────────── */
+.confetti-bit {
+  position: fixed; width: 8px; height: 8px;
+  border-radius: 2px; pointer-events: none; z-index: 999;
+  top: 40%;
+  animation: pfConf .85s ease forwards;
+}
+
+/* ── SECTION LABEL HELPER ─────────────────────── */
+.flex-center { display: flex; align-items: center; }
+
+/* ── FOLDER PILLS ─────────────────────────────── */
+.folder-pill {
+  padding: 5px 12px; border-radius: 99px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1.5px solid var(--bd);
+  background: var(--bh); color: var(--tx2); transition: all .15s;
+}
+.folder-pill.active { border-color: var(--or); background: var(--or); color: #fff; }
+
+/* ── TAB BAR ──────────────────────────────────── */
+.tab-bar {
+  display: flex; border-radius: 8px; padding: 3px; gap: 2px;
+}
+.tab-btn {
+  flex: 1; padding: 6px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 700; border: none; cursor: pointer;
+  transition: all .15s; background: transparent; color: var(--tx3);
+  font-family: inherit;
+}
+.tab-btn.active {
+  background: var(--or); color: #fff;
+  box-shadow: 0 2px 9px rgba(249,115,22,.35);
+}
+
+/* ── ANIMATIONS ───────────────────────────────── */
+@keyframes pfPulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+@keyframes pfConf  {
+  0%  { opacity:1; transform:scale(0) rotate(0) }
+  70% { opacity:.8; transform:scale(1.1) rotate(200deg) }
+  100%{ opacity:0; transform:scale(.9) translateY(-28px) rotate(360deg) }
+}
+@keyframes pfShake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-4px)} 40%{transform:translateX(4px)}
+  60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+}
+.shake { animation: pfShake .3s ease; }
+
+/* ── RESPONSIVE ───────────────────────────────── */
+@media(max-width:860px){
+  #desktop-layout{display:none!important}
+  #mobile-layout{display:flex!important}
+}
+@media(min-width:861px){
+  #mobile-layout{display:none!important}
+  #desktop-layout{display:grid!important}
+}
+</style>
+</head>
+<body data-theme="dark">
+
+<div id="bg-mesh"></div>
+<div id="app">
+
+  <!-- HEADER -->
+  <header id="header" class="glass">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div>
+        <div class="logo-text-main">PromptForge</div>
+        <div class="logo-text-sub">JSON Variable Editor</div>
+      </div>
+    </div>
+    <div id="header-right">
+      <div id="live-badge" class="live-badge" style="display:none">
+        <div class="live-dot"></div>
+        <span class="live-text">Live</span>
+      </div>
+      <button class="btn btn-ghost btn-icon btn-badge" title="Dependency Map" onclick="openModal('depmap')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-icon btn-badge" title="Chains" id="hdr-chains-btn" onclick="openModal('chain')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-icon" title="Share" onclick="openModal('share')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-icon" title="Export" onclick="openModal('export')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-icon" id="hdr-theme-btn" title="Theme" onclick="openModal('theme')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-icon btn-badge" title="Library" id="hdr-lib-btn" onclick="openModal('lib')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 014 17V4h16v13M12 10v4M10 12h4"/></svg>
+      </button>
+      <button class="btn btn-primary" id="hdr-save-btn" onclick="openModal('save')" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8"/></svg>
+        Save
+      </button>
+    </div>
+  </header>
+
+  <!-- DESKTOP 3-COL -->
+  <div id="desktop-layout">
+    <!-- Input -->
+    <div id="col-input">
+      <div class="panel-header">
+        <div class="flex-center" style="gap:6px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+          <span class="panel-label">JSON Input</span>
+        </div>
+        <div id="input-status"></div>
+      </div>
+      <div id="input-err" class="err-box" style="display:none"></div>
+      <div id="input-body">
+        <textarea id="json-textarea" class="inp" spellcheck="false" placeholder="Paste JSON prompt here…"></textarea>
+      </div>
+    </div>
+    <!-- Vars -->
+    <div id="col-vars">
+      <div class="panel-header">
+        <div class="flex-center" style="gap:6px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+          <span class="panel-label">Variables</span>
+        </div>
+        <div class="flex-center" style="gap:5px">
+          <span id="vars-pct-tag" class="tag" style="display:none"></span>
+          <button class="btn btn-ghost btn-xs" onclick="openModal('depmap')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+            Map
+          </button>
+        </div>
+      </div>
+      <div class="panel-divider"></div>
+      <div id="vars-panel-desk"></div>
+    </div>
+    <!-- Output -->
+    <div id="col-output">
+      <div class="panel-header">
+        <div class="flex-center" style="gap:6px">
+          <div class="live-dot"></div>
+          <span class="panel-label">Live Output</span>
+        </div>
+        <div class="flex-center" style="gap:6px">
+          <span id="out-unfilled-tag" class="tag" style="display:none"></span>
+          <button class="btn btn-ghost btn-xs" id="desk-copy-btn" onclick="copyOutput()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2v-2M16 4h2a2 2 0 012 2v2M11 4h4v4h-4z"/></svg>
+            Copy
+          </button>
+          <button class="btn btn-ghost btn-xs" onclick="openModal('export')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Export
+          </button>
+        </div>
+      </div>
+      <div class="panel-divider"></div>
+      <div id="output-body">
+        <div id="output-content" class="highout"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE LAYOUT -->
+  <div id="mobile-layout">
+    <div class="glass" style="border-bottom:1px solid var(--bd);flex-shrink:0">
+      <div class="step-bar" id="mob-step-bar"></div>
+    </div>
+    <div id="mob-body" class="mob-step-body"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer id="footer" class="glass">
+    <div id="footer-left">
+      <span class="tag" style="background:#fb923c20;color:#fb923c;border:1px solid #fb923c40;font-size:7px;padding:1px 5px">{{v}}</span>
+      <span class="tag" style="background:#22d3ee20;color:#22d3ee;border:1px solid #22d3ee40;font-size:7px;padding:1px 5px">${v}</span>
+      <span class="tag" style="background:#c4b5fd20;color:#c4b5fd;border:1px solid #c4b5fd40;font-size:7px;padding:1px 5px">[V]</span>
+      <span class="tag" style="background:#6ee7b720;color:#6ee7b7;border:1px solid #6ee7b740;font-size:7px;padding:1px 5px">%V%</span>
+    </div>
+    <div id="footer-right">
+      <span id="footer-act" style="display:none" class="act-indicator"><span class="act-dot"></span><span id="footer-act-name"></span></span>
+      <span>Offline ready</span>
+    </div>
+  </footer>
+
+</div>
+
+<!-- MODALS -->
+<div id="modal-container"></div>
+
+<!-- TOAST -->
+<div id="toast" class="glass2"></div>
+
+<script>
+/* ─────────────────────────────────────────────────
+   CONSTANTS
+───────────────────────────────────────────────── */
+const OR = '#f97316';
+const PATS = [
+  { re: /\{\{([^}]+)\}\}/g, syn: 'handlebars', o: '{{', c: '}}' },
+  { re: /\$\{([^}]+)\}/g,   syn: 'template',   o: '${', c: '}'  },
+  { re: /\[([A-Z_][A-Z0-9_]*)\]/g, syn: 'bracket', o: '[', c: ']' },
+  { re: /%([A-Z_][A-Z0-9_]*)%/g,   syn: 'percent',  o: '%', c: '%' },
+];
+const UNRE = /(\{\{[^}]+\}\}|\$\{[^}]+\}|\[[A-Z_][A-Z0-9_]*\]|%[A-Z_][A-Z0-9_]*%)/g;
+const SCOL = { handlebars:'#fb923c', template:'#22d3ee', bracket:'#c4b5fd', percent:'#6ee7b7' };
+const VTYPES = ['text','number','date','email','url','textarea','select'];
+const VM = {
+  text:     { e:'✏️', l:'Text' }, number: { e:'🔢', l:'Num' },
+  date:     { e:'📅', l:'Date' }, email:  { e:'📧', l:'Email' },
+  url:      { e:'🔗', l:'URL'  }, textarea:{ e:'📝', l:'Long' },
+  select:   { e:'🔽', l:'Select' }
+};
+const LS = { PR:'pf_p6', FO:'pf_f6', PF:'pf_pf6', CH:'pf_ch6', TH:'pf_th6' };
+const EX = `{\n  "system": "You are a {{role}} for {{domain}}.",\n  "prompt": "Hi {{user_name}}, your task is \${task}.",\n  "config": { "language": "{{language}}", "tone": "{{tone}}" }\n}`;
+
+const ICONS = {
+  bolt:   "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
+  save:   "M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8",
+  copy:   "M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2v-2M16 4h2a2 2 0 012 2v2M11 4h4v4h-4z",
+  check:  "M20 6L9 17l-5-5",
+  trash:  "M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6",
+  plus:   "M12 5v14M5 12h14",
+  close:  "M18 6L6 18M6 6l12 12",
+  search: "M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z",
+  edit:   "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z",
+  vars:   "M4 6h16M4 12h16M4 18h7",
+  reset:  "M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15",
+  clock:  "M12 2a10 10 0 100 20A10 10 0 0012 2zM12 6v6l4 2",
+  lib:    "M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 014 17V4h16v13M12 10v4M10 12h4",
+  map:    "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z",
+  user:   "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z",
+  chain:  "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
+  exp:    "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3",
+  sun:    "M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 17a5 5 0 100-10 5 5 0 000 10z",
+  moon:   "M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z",
+  share:  "M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13",
+  folder: "M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z",
+};
+
+/* ─────────────────────────────────────────────────
+   STATE
+───────────────────────────────────────────────── */
+const S = {
+  raw:      EX,
+  parsed:   null,
+  err:      null,
+  vars:     {},
+  vals:     {},
+  vtypes:   {},
+  vopts:    {},
+  out:      '',
+  step:     0,
+  theme:    lget(LS.TH,'dark'),
+  prompts:  lget(LS.PR,[]),
+  folders:  lget(LS.FO,[]),
+  profs:    lget(LS.PF,[]),
+  chains:   lget(LS.CH,[]),
+  activeId: null,
+  copied:   false,
+  expandedVar: null,
+};
+
+let toastTimer = null;
+
+/* ─────────────────────────────────────────────────
+   STORAGE
+───────────────────────────────────────────────── */
+function lget(k,d){ try{ return JSON.parse(localStorage.getItem(k))||d; }catch{ return d; } }
+function lset(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} }
+
+/* ─────────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────────── */
+function flatten(o,p,r){
+  p=p||''; r=r||{};
+  if(typeof o!=='object'||!o){ r[p]=o; return r; }
+  for(const[k,v] of Object.entries(o)){
+    const key=p?p+'.'+k:k;
+    typeof v==='object'&&v&&!Array.isArray(v)?flatten(v,key,r):r[key]=v;
+  }
+  return r;
+}
+function extractVars(obj){
+  const out={};
+  for(const[path,val] of Object.entries(flatten(obj))){
+    if(typeof val!=='string') continue;
+    for(const p of PATS){
+      const re=new RegExp(p.re.source,'g'); let m;
+      while((m=re.exec(val))!==null){
+        const n=m[1].trim();
+        if(!out[n]) out[n]={syn:p.syn,paths:[],count:0};
+        out[n].count++;
+        if(!out[n].paths.includes(path)) out[n].paths.push(path);
+      }
+    }
+  }
+  return out;
+}
+function buildOut(obj,vals){
+  let s=JSON.stringify(obj,null,2);
+  for(const p of PATS){
+    const re=new RegExp(p.re.source,'g');
+    s=s.replace(re,(_,n)=>{ const t=n.trim(); return vals[t]?vals[t]:p.o+n+p.c; });
+  }
+  return s;
+}
+function ic(name,size=16,col){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${col||'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[name]||''}"/></svg>`;
+}
+function tag(color,text,extra=''){
+  return `<span class="tag" style="background:${color}20;color:${color};border:1px solid ${color}40;${extra}">${text}</span>`;
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ─────────────────────────────────────────────────
+   PARSE
+───────────────────────────────────────────────── */
+function parse(text){
+  try{
+    const obj=JSON.parse(text);
+    S.parsed=obj; S.err=null;
+    const d=extractVars(obj); S.vars=d;
+    const nv={};
+    for(const k of Object.keys(d)) nv[k]=S.vals[k]||'';
+    S.vals=nv;
+  }catch(e){
+    S.parsed=null; S.err=e.message; S.vars={};
+  }
+}
+
+function recompute(){
+  if(S.parsed) S.out=buildOut(S.parsed,S.vals);
+  else S.out='';
+}
+
+/* ─────────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────────── */
+function toast(msg,type='success'){
+  const el=document.getElementById('toast');
+  const col={success:'#4ade80',error:'#f87171',info:OR}[type]||'#f4f4f5';
+  const icon={success:'✓',error:'✕',info:'⚡'}[type]||'✓';
+  el.innerHTML=`<span style="color:${col};font-size:15px">${icon}</span><span style="color:${col}">${esc(msg)}</span>`;
+  el.className='glass2 show';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ el.className='glass2'; },2400);
+}
+
+/* ─────────────────────────────────────────────────
+   CONFETTI
+───────────────────────────────────────────────── */
+function spawnConfetti(){
+  const colors=['#f97316','#fb923c','#fbbf24','#4ade80','#60a5fa','#f472b6'];
+  for(let i=0;i<16;i++){
+    const d=document.createElement('div');
+    d.className='confetti-bit';
+    d.style.left=Math.random()*100+'%';
+    d.style.background=colors[i%6];
+    d.style.animationDelay=Math.random()*.4+'s';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),1400);
+  }
+}
+
+/* ─────────────────────────────────────────────────
+   RENDER HELPERS
+───────────────────────────────────────────────── */
+function renderHighOut(text){
+  if(!text) return `<span class="out-placeholder">Output appears here…</span>`;
+  const parts=[];let last=0,m;
+  const re=new RegExp(UNRE.source,'g');
+  while((m=re.exec(text))!==null){
+    if(m.index>last) parts.push({t:text.slice(last,m.index),h:false});
+    parts.push({t:m[0],h:true});
+    last=m.index+m[0].length;
+  }
+  if(last<text.length) parts.push({t:text.slice(last),h:false});
+  return parts.map(p=>p.h
+    ?`<span class="highout-unfilled">${esc(p.t)}</span>`
+    :esc(p.t)
+  ).join('');
+}
+
+function renderVarsPanel(containerId){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  const total=Object.keys(S.vars).length;
+  const filled=Object.values(S.vals).filter(Boolean).length;
+  const pct=total?Math.round(filled/total*100):0;
+
+  if(total===0){
+    container.innerHTML=`
+      <div class="var-empty">
+        <div style="font-size:34px;opacity:.2">⚙</div>
+        <div style="font-size:14px;font-weight:700;color:var(--tx2)">No variables found</div>
+        <div style="font-size:12px;color:var(--tx3)">Add <code style="background:var(--bh);padding:2px 6px;border-radius:5px;font-size:11px">{{name}}</code> to your JSON</div>
+      </div>`;
+    return;
+  }
+
+  const q=container._q||'';
+  const list=Object.entries(S.vars).filter(([n])=>!q||n.toLowerCase().includes(q.toLowerCase()));
+
+  let html=`
+    <div style="padding:10px 12px;flex-shrink:0" id="${containerId}-toolbar">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+        <span style="font-size:12px;font-weight:600;color:var(--tx2)">${filled}/${total} filled</span>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-ghost btn-sm" onclick="openModal('profiles')">
+            ${ic('user',11)} Profiles
+          </button>
+          ${filled>0?`<button class="btn btn-ghost btn-sm" onclick="resetVals()">${ic('reset',11)} Clear</button>`:''}
+        </div>
+      </div>
+      <div style="height:5px;background:var(--s3);border-radius:99px;overflow:hidden">
+        <div style="height:100%;border-radius:99px;width:${pct}%;
+          background:${pct===100?'linear-gradient(90deg,#4ade80,#22c55e)':'linear-gradient(90deg,#f97316,#fb923c)'};
+          box-shadow:${pct===100?'0 0 8px rgba(74,222,128,.35)':'0 0 8px rgba(249,115,22,.35)'};
+          transition:width .35s ease"></div>
+      </div>
+    </div>`;
+
+  if(total>5){
+    html+=`
+      <div style="padding:0 10px 8px;flex-shrink:0;position:relative">
+        <span style="position:absolute;left:19px;top:50%;transform:translateY(-50%);color:var(--tx3);pointer-events:none">${ic('search',13)}</span>
+        <input class="inp" style="padding:7px 10px 7px 27px;font-size:12px" placeholder="Filter…"
+          value="${esc(q)}"
+          oninput="setVarsFilter('${containerId}',this.value)"/>
+      </div>`;
+  }
+
+  html+=`<div style="height:1px;background:var(--bd);flex-shrink:0"></div>
+    <div style="flex:1;overflow-y:auto;min-height:0;padding:7px 9px">`;
+
+  for(const[name,meta] of list){
+    const done=Boolean(S.vals[name]);
+    const typ=S.vtypes[name]||'text';
+    const exp=S.expandedVar===name+containerId;
+    const sc=SCOL[meta.syn]||'#fb923c';
+
+    html+=`<div class="var-item ${done?'filled':''} ${exp?'expanded':''}" id="vi-${containerId}-${CSS.escape(name)}">
+      <div class="var-item-header">
+        <div class="var-name-row">
+          <div class="var-dot ${done?'done':''}"></div>
+          <code class="var-name">${esc(name)}</code>
+        </div>
+        <div class="var-controls">
+          <button class="type-toggle ${exp?'active':''}" onclick="toggleVarExpand('${containerId}','${esc(name)}')">
+            <span>${VM[typ].e}</span><span>${VM[typ].l}</span>
+          </button>
+          ${tag(sc,meta.syn.slice(0,4),'font-size:8px')}
+        </div>
+      </div>`;
+
+    if(exp){
+      html+=`<div style="margin-bottom:8px">
+        <div class="modal-label" style="margin-bottom:5px">Type</div>
+        <div class="var-type-picker">
+          ${VTYPES.map(tp=>`<button class="type-btn ${typ===tp?'active':''}" onclick="setVarType('${containerId}','${esc(name)}','${tp}')">${VM[tp].e} ${VM[tp].l}</button>`).join('')}
+        </div>
+        ${typ==='select'?`<div>
+          <div class="modal-label" style="margin-bottom:5px">Options (comma-separated)</div>
+          <input class="inp" style="font-size:12px;padding:7px 10px" placeholder="Option A, Option B…"
+            value="${esc((S.vopts[name]||[]).join(', '))}"
+            oninput="setVarOpts('${containerId}','${esc(name)}',this.value)"/>
+        </div>`:''}
+      </div>`;
+    }
+
+    if(typ==='textarea'){
+      html+=`<textarea class="inp" rows="3" style="font-size:12px;padding:7px 10px;resize:vertical;font-family:monospace"
+        placeholder="Enter ${esc(name)}…"
+        oninput="setVal('${esc(name)}',this.value)">${esc(S.vals[name]||'')}</textarea>`;
+    } else if(typ==='select'&&(S.vopts[name]||[]).length){
+      html+=`<select class="inp" style="font-size:12px;padding:7px 10px;cursor:pointer" onchange="setVal('${esc(name)}',this.value)">
+        <option value="">Select…</option>
+        ${(S.vopts[name]||[]).map(o=>`<option value="${esc(o)}" ${S.vals[name]===o?'selected':''}>${esc(o)}</option>`).join('')}
+      </select>`;
+    } else {
+      const itype={number:'number',date:'date',email:'email',url:'url'}[typ]||'text';
+      html+=`<input class="inp" type="${itype}" style="font-size:12px;padding:7px 10px"
+        placeholder="Enter ${esc(name)}…"
+        value="${esc(S.vals[name]||'')}"
+        oninput="setVal('${esc(name)}',this.value)"/>`;
+    }
+
+    if(meta.paths.length>0){
+      html+=`<div class="var-paths">↳ ${meta.paths.slice(0,2).map(esc).join(' · ')}${meta.paths.length>2?' +'+(meta.paths.length-2):''}</div>`;
+    }
+    html+=`</div>`;
+  }
+  html+=`</div>`;
+
+  container.innerHTML=html;
+  container._q=q;
+  container.style.display='flex';
+  container.style.flexDirection='column';
+  container.style.height='100%';
+  container.style.minHeight='0';
+}
+
+/* ─────────────────────────────────────────────────
+   VAR ACTIONS
+───────────────────────────────────────────────── */
+function setVal(name,value){
+  const prevPct=calcPct();
+  S.vals[name]=value;
+  recompute();
+  const newPct=calcPct();
+  if(newPct===100&&prevPct<100&&Object.keys(S.vars).length>0) spawnConfetti();
+  renderAll();
+}
+function calcPct(){
+  const total=Object.keys(S.vars).length;
+  const filled=Object.values(S.vals).filter(Boolean).length;
+  return total?Math.round(filled/total*100):0;
+}
+function resetVals(){
+  S.vals=Object.fromEntries(Object.keys(S.vars).map(k=>[k,'']));
+  recompute(); renderAll(); toast('Values cleared','info');
+}
+function toggleVarExpand(cid,name){
+  const key=name+cid;
+  S.expandedVar=S.expandedVar===key?null:key;
+  renderVarsPanel(cid);
+  if(document.getElementById('mob-vars-panel')) renderVarsPanel('mob-vars-panel');
+}
+function setVarType(cid,name,tp){
+  S.vtypes[name]=tp;
+  renderVarsPanel(cid);
+  if(document.getElementById('mob-vars-panel')) renderVarsPanel('mob-vars-panel');
+}
+function setVarOpts(cid,name,val){
+  S.vopts[name]=val.split(',').map(s=>s.trim()).filter(Boolean);
+}
+function setVarsFilter(cid,val){
+  const el=document.getElementById(cid);
+  if(el){ el._q=val; renderVarsPanel(cid); }
+}
+
+/* ─────────────────────────────────────────────────
+   RENDER ALL
+───────────────────────────────────────────────── */
+function renderAll(){
+  const total=Object.keys(S.vars).length;
+  const filled=Object.values(S.vals).filter(Boolean).length;
+  const pct=total?Math.round(filled/total*100):0;
+  const unfilled=total-filled;
+
+  // Header live badge
+  document.getElementById('live-badge').style.display=(S.parsed&&!S.err)?'flex':'none';
+  // Save btn
+  document.getElementById('hdr-save-btn').disabled=!S.parsed;
+
+  // Input status
+  const istat=document.getElementById('input-status');
+  if(S.err) istat.innerHTML=tag('#f87171','Invalid','font-size:8px');
+  else if(S.parsed) istat.innerHTML=tag('#4ade80',total+' vars','font-size:8px');
+  else istat.innerHTML='';
+
+  // Input error box
+  const errBox=document.getElementById('input-err');
+  if(S.err){ errBox.textContent='⚠ '+S.err; errBox.style.display='block'; }
+  else errBox.style.display='none';
+
+  // Vars pct tag
+  const vpct=document.getElementById('vars-pct-tag');
+  if(total>0){
+    vpct.textContent=pct+'%'; vpct.style.display='inline-flex';
+    vpct.style.background=OR+'20'; vpct.style.color=OR; vpct.style.border='1px solid '+OR+'40'; vpct.style.fontSize='8px';
+  } else vpct.style.display='none';
+
+  // Output unfilled tag
+  const otag=document.getElementById('out-unfilled-tag');
+  if(unfilled>0){
+    otag.textContent=unfilled+' unfilled'; otag.style.display='inline-flex';
+    otag.style.background=OR+'20'; otag.style.color=OR; otag.style.border='1px solid '+OR+'40'; otag.style.fontSize='8px';
+  } else otag.style.display='none';
+
+  // Output
+  const oc=document.getElementById('output-content');
+  if(oc){ oc.innerHTML=renderHighOut(S.out); }
+
+  // Vars panels
+  renderVarsPanel('vars-panel-desk');
+
+  // Library badge
+  const libBtn=document.getElementById('hdr-lib-btn');
+  let libBadge=libBtn.querySelector('.badge');
+  if(S.prompts.length){
+    if(!libBadge){ libBadge=document.createElement('span'); libBadge.className='badge'; libBtn.appendChild(libBadge); }
+    libBadge.textContent=S.prompts.length;
+  } else if(libBadge) libBadge.remove();
+
+  // Chains badge
+  const chainBtn=document.getElementById('hdr-chains-btn');
+  let chainBadge=chainBtn.querySelector('.badge');
+  if(S.chains.length){
+    if(!chainBadge){ chainBadge=document.createElement('span'); chainBadge.className='badge'; chainBtn.appendChild(chainBadge); }
+    chainBadge.textContent=S.chains.length;
+  } else if(chainBadge) chainBadge.remove();
+
+  // Footer active
+  const act=S.prompts.find(p=>p.id===S.activeId);
+  const fAct=document.getElementById('footer-act');
+  if(act){ fAct.style.display='flex'; document.getElementById('footer-act-name').textContent=act.name; }
+  else fAct.style.display='none';
+
+  // Theme icon
+  renderThemeIcon();
+
+  // Mobile
+  renderMobile();
+}
+
+function renderThemeIcon(){
+  const btn=document.getElementById('hdr-theme-btn');
+  if(!btn) return;
+  const iname=S.theme==='light'?'sun':'moon';
+  btn.innerHTML=ic(iname,14);
+}
+
+/* ─────────────────────────────────────────────────
+   MOBILE RENDER
+───────────────────────────────────────────────── */
+function renderMobile(){
+  const bar=document.getElementById('mob-step-bar');
+  if(!bar) return;
+
+  const labels=['JSON','Variables','Output'];
+  bar.innerHTML=labels.map((l,i)=>`
+    <div style="display:flex;align-items:center">
+      <div class="step-item">
+        <div class="step-circle ${i<S.step?'done':i===S.step?'active':''}">${i<S.step?'✓':i+1}</div>
+        <span class="step-label ${i===S.step?'active':''}">${l}</span>
+      </div>
+      ${i<2?`<div class="step-connector ${i<S.step?'done':''}"></div>`:''}
+    </div>`).join('');
+
+  const body=document.getElementById('mob-body');
+  if(!body) return;
+
+  const total=Object.keys(S.vars).length;
+  const filled=Object.values(S.vals).filter(Boolean).length;
+  const unfilled=total-filled;
+
+  if(S.step===0){
+    body.innerHTML=`
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;padding:12px 12px 0">
+        ${S.err?`<div style="margin-bottom:8px;padding:8px 11px;border-radius:8px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.17);font-size:11px;color:#fca5a5;font-family:monospace;flex-shrink:0" id="mob-err-box">⚠ ${esc(S.err)}</div>`:''}
+        <textarea id="mob-json-textarea" class="inp" spellcheck="false"
+          style="flex:1;min-height:0;padding:12px;font-size:11.5px;font-family:'JetBrains Mono',monospace;line-height:1.82;resize:none"
+          placeholder="Paste your JSON prompt here…">${esc(S.raw)}</textarea>
+        <div style="padding:12px 0;flex-shrink:0">
+          <button class="btn btn-primary" style="width:100%;justify-content:center;gap:6px" onclick="tryNext()">
+            Detect Variables →
+          </button>
+        </div>
+      </div>`;
+    document.getElementById('mob-json-textarea').addEventListener('input',e=>{
+      S.raw=e.target.value;
+      parse(S.raw); recompute();
+      // update desktop textarea too
+      const dt=document.getElementById('json-textarea');
+      if(dt) dt.value=S.raw;
+      renderAll();
+    });
+  } else if(S.step===1){
+    body.innerHTML=`
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
+        <div style="padding:7px 11px;border-bottom:1px solid var(--bd);flex-shrink:0;display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openModal('depmap')">${ic('map',11)} Map</button>
+          <button class="btn btn-ghost btn-sm" onclick="openModal('profiles')">${ic('user',11)} Profiles</button>
+        </div>
+        <div id="mob-vars-panel" style="flex:1;overflow:hidden;min-height:0;display:flex;flex-direction:column"></div>
+        <div class="mob-footer">
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;gap:4px" onclick="setStep(0)">${ic('close',12)} Back</button>
+          <button class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px;gap:5px" onclick="setStep(2)">
+            ${unfilled>0?`Output (${unfilled} unfilled)`:'View Output →'}
+          </button>
+        </div>
+      </div>`;
+    renderVarsPanel('mob-vars-panel');
+  } else if(S.step===2){
+    body.innerHTML=`
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
+        <div class="panel-header" style="flex-shrink:0">
+          <div class="flex-center" style="gap:6px"><div class="live-dot"></div><span class="panel-label">Live Output</span></div>
+          <div class="flex-center" style="gap:6px">
+            ${unfilled>0?tag(OR,unfilled+' unfilled','font-size:8px'):''}
+            <button class="btn btn-ghost btn-xs" onclick="openModal('export')">${ic('exp',11)} Export</button>
+          </div>
+        </div>
+        <div style="height:1px;background:var(--bd);flex-shrink:0"></div>
+        <div style="flex:1;overflow-y:auto;min-height:0;padding:12px">
+          <div class="highout">${renderHighOut(S.out)}</div>
+        </div>
+        <div class="mob-footer">
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;gap:4px" onclick="setStep(1)">${ic('vars',12)} Edit</button>
+          <button class="btn ${S.copied?'btn-ghost':'btn-primary'}" id="mob-copy-btn" style="flex:1;justify-content:center;font-size:12px;gap:6px;${S.copied?'color:#4ade80':''}" onclick="copyOutput()">
+            ${ic(S.copied?'check':'copy',14)} ${S.copied?'Copied!':'Copy Output'}
+          </button>
+        </div>
+      </div>`;
+  }
+}
+
+function setStep(n){
+  S.step=n; renderMobile();
+}
+
+function tryNext(){
+  if(S.err||!S.parsed){
+    const errBox=document.getElementById('mob-err-box');
+    if(errBox) errBox.classList.add('shake');
+    toast('Fix JSON first','error'); return;
+  }
+  setStep(Math.min(S.step+1,2));
+}
+
+/* ─────────────────────────────────────────────────
+   COPY OUTPUT
+───────────────────────────────────────────────── */
+async function copyOutput(){
+  if(!S.out) return;
+  try{
+    await navigator.clipboard.writeText(S.out);
+    S.copied=true; toast('Copied!');
+    const btn=document.getElementById('desk-copy-btn');
+    if(btn) btn.innerHTML=ic('check',11)+' Copied!';
+    setTimeout(()=>{
+      S.copied=false;
+      if(btn) btn.innerHTML=ic('copy',11)+' Copy';
+      renderMobile();
+    },2200);
+    renderMobile();
+  }catch(e){ toast('Copy failed','error'); }
+}
+
+/* ─────────────────────────────────────────────────
+   MODALS
+───────────────────────────────────────────────── */
+function openModal(id){ renderModal(id); }
+function closeModal(){
+  const c=document.getElementById('modal-container');
+  c.innerHTML='';
+}
+
+function renderModal(id){
+  const c=document.getElementById('modal-container');
+  let html='';
+  if(id==='save')    html=modalSave();
+  else if(id==='lib') html=modalLib();
+  else if(id==='depmap') html=modalDepMap();
+  else if(id==='profiles') html=modalProfiles();
+  else if(id==='share') html=modalShare();
+  else if(id==='export') html=modalExport();
+  else if(id==='chain') html=modalChains();
+  else if(id==='theme') html=modalTheme();
+  c.innerHTML=html;
+}
+
+/* ── SAVE MODAL ───────────────────────────────── */
+function modalSave(){
+  const act=S.prompts.find(p=>p.id===S.activeId);
+  const allF=['General',...S.folders];
+  return `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet glass2">
+      <div class="sheet-head">
+        <div><div class="sheet-title">Save Prompt</div><div class="sheet-sub">Stored offline in your browser</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="closeModal()">${ic('close',14)}</button>
+      </div>
+      <div style="padding:14px 20px;display:flex;flex-direction:column;gap:12px">
+        <div class="modal-row">
+          <div class="modal-label">Name *</div>
+          <input id="save-name" class="inp" placeholder="e.g. Customer Support Agent" value="${esc(act?.name||'')}" onkeydown="if(event.key==='Enter')doSavePrompt()"/>
+        </div>
+        <div class="modal-row">
+          <div class="modal-label">Description</div>
+          <input id="save-desc" class="inp" placeholder="Optional…" value="${esc(act?.desc||'')}"/>
+        </div>
+        <div class="modal-row">
+          <div class="modal-label">Folder</div>
+          <div id="folder-picker" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            ${allF.map(f=>`<button class="folder-pill ${(act?.folder||'General')===f?'active':''}" onclick="selectFolder(this,'${esc(f)}')">${esc(f)}</button>`).join('')}
+            <button class="btn btn-ghost btn-sm" onclick="showNewFolderInput()">${ic('plus',11)} New</button>
+          </div>
+          <div id="new-folder-input" style="display:none;margin-top:6px">
+            <div style="display:flex;gap:7px;align-items:center">
+              <input id="new-folder-val" class="inp" placeholder="Folder name…" style="max-width:160px;font-size:12px;padding:7px 10px" 
+                onkeydown="if(event.key==='Enter')confirmNewFolder();if(event.key==='Escape')hideNewFolderInput()"/>
+              <button class="btn btn-primary" style="padding:6px 11px;font-size:12px" onclick="confirmNewFolder()">Add</button>
+              <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px" onclick="hideNewFolderInput()">✕</button>
+            </div>
+          </div>
+          <input type="hidden" id="save-folder" value="${esc(act?.folder||'General')}"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" style="gap:5px" onclick="doSavePrompt()">${ic('save',13)} Save</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function selectFolder(btn,name){
+  document.querySelectorAll('.folder-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('save-folder').value=name;
+}
+function showNewFolderInput(){
+  document.getElementById('new-folder-input').style.display='block';
+  setTimeout(()=>document.getElementById('new-folder-val').focus(),50);
+}
+function hideNewFolderInput(){
+  document.getElementById('new-folder-input').style.display='none';
+}
+function confirmNewFolder(){
+  const val=document.getElementById('new-folder-val').value.trim();
+  if(!val) return;
+  document.getElementById('save-folder').value=val;
+  const picker=document.getElementById('folder-picker');
+  // update UI
+  const pills=picker.querySelectorAll('.folder-pill');
+  pills.forEach(p=>p.classList.remove('active'));
+  const newBtn=document.createElement('button');
+  newBtn.className='folder-pill active';
+  newBtn.textContent=val;
+  newBtn.onclick=function(){ selectFolder(this,val); };
+  picker.insertBefore(newBtn,picker.lastElementChild);
+  hideNewFolderInput();
+}
+function doSavePrompt(){
+  const name=document.getElementById('save-name').value.trim();
+  if(!name) return;
+  const desc=document.getElementById('save-desc').value.trim();
+  const folder=document.getElementById('save-folder').value||'General';
+  const item={id:Date.now().toString(),name,desc,folder,raw:S.raw,vals:S.vals,vtypes:S.vtypes,vopts:S.vopts,savedAt:Date.now()};
+  const upd=[...S.prompts.filter(p=>p.id!==S.activeId),item];
+  const nf=[...new Set([...S.folders,folder].filter(f=>f!=='General'))];
+  S.prompts=upd; lset(LS.PR,upd);
+  S.folders=nf; lset(LS.FO,nf);
+  S.activeId=item.id;
+  closeModal(); toast('"'+name+'" saved!'); renderAll();
+}
+
+/* ── LIB MODAL ────────────────────────────────── */
+function modalLib(){
+  const count=S.prompts.length;
+  return `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet wide glass2" id="lib-sheet">
+      <div class="sheet-head">
+        <div><div class="sheet-title">Library</div><div class="sheet-sub">${count} saved prompt${count!==1?'s':''}</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="closeModal()">${ic('close',14)}</button>
+      </div>
+      <div style="padding:11px 18px 0;flex-shrink:0">
+        <div style="position:relative;margin-bottom:10px">
+          <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--tx3);pointer-events:none">${ic('search',13)}</span>
+          <input id="lib-q" class="inp" placeholder="Search…" style="padding-left:28px;font-size:12px;padding:7px 10px 7px 28px" oninput="renderLibList()"/>
+        </div>
+        <div id="lib-filters" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none"></div>
+        <div style="height:1px;background:var(--bd)"></div>
+      </div>
+      <div id="lib-list" class="sheet-body" style="padding:8px 13px"></div>
+    </div>
+  </div>`;
+}
+function renderLibList(){
+  const q=(document.getElementById('lib-q')||{}).value||'';
+  const af=window._libFilter||'All';
+  const allF=['All','General',...S.folders];
+  const filtersEl=document.getElementById('lib-filters');
+  if(filtersEl) filtersEl.innerHTML=allF.map(f=>`<button class="folder-pill ${af===f?'active':''}" style="white-space:nowrap;flex-shrink:0" onclick="setLibFilter('${esc(f)}')">${esc(f)}</button>`).join('');
+  const filt=S.prompts.filter(p=>{
+    const mf=af==='All'||(p.folder||'General')===af;
+    const ms=!q||p.name.toLowerCase().includes(q.toLowerCase())||(p.desc||'').toLowerCase().includes(q.toLowerCase());
+    return mf&&ms;
+  });
+  const listEl=document.getElementById('lib-list');
+  if(!listEl) return;
+  if(filt.length===0){
+    listEl.innerHTML=`<div style="padding:40px 20px;text-align:center;color:var(--tx3)"><div style="font-size:13px;font-weight:600;color:var(--tx2)">${S.prompts.length===0?'No saved prompts yet':'Nothing here'}</div></div>`;
+    return;
+  }
+  listEl.innerHTML=filt.map(p=>`
+    <div onclick="loadPrompt('${p.id}')" style="border-radius:10px;padding:11px 12px;margin-bottom:5px;cursor:pointer;border:1.5px solid ${S.activeId===p.id?'rgba(249,115,22,.28)':'var(--bd)'};background:${S.activeId===p.id?'rgba(249,115,22,.08)':'var(--bh)'};transition:all .15s">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</div>
+          ${p.desc?`<div style="font-size:11px;color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.desc)}</div>`:''}
+          <div style="display:flex;gap:8px;margin-top:5px;align-items:center">
+            <span style="font-size:10px;color:var(--tx3);display:flex;align-items:center;gap:3px">${ic('folder',10)}${esc(p.folder||'General')}</span>
+            <span style="font-size:10px;color:var(--tx3);display:flex;align-items:center;gap:3px">${ic('clock',10)}${new Date(p.savedAt).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span>
+          </div>
+        </div>
+        <button class="btn btn-danger" style="padding:4px 6px;flex-shrink:0" onclick="event.stopPropagation();delPrompt('${p.id}')">${ic('trash',12)}</button>
+      </div>
+    </div>`).join('');
+}
+function setLibFilter(f){
+  window._libFilter=f; renderLibList();
+}
+function loadPrompt(id){
+  const p=S.prompts.find(x=>x.id===id); if(!p) return;
+  S.raw=p.raw; parse(S.raw); recompute();
+  setTimeout(()=>{ S.vals=p.vals||{}; S.vtypes=p.vtypes||{}; S.vopts=p.vopts||{}; recompute(); renderAll(); },65);
+  S.activeId=p.id;
+  closeModal(); toast('Loaded "'+p.name+'"','info'); S.step=1; renderAll();
+  const dt=document.getElementById('json-textarea'); if(dt) dt.value=S.raw;
+}
+function delPrompt(id){
+  S.prompts=S.prompts.filter(p=>p.id!==id); lset(LS.PR,S.prompts);
+  if(S.activeId===id) S.activeId=null;
+  toast('Deleted','error'); renderLibList(); renderAll();
+}
+
+/* ── DEPMAP MODAL ─────────────────────────────── */
+function modalDepMap(){
+  const ents=Object.entries(S.vars);
+  const paths=[...new Set(ents.flatMap(([,m])=>m.paths))];
+  const W=500,H=Math.max(140,Math.max(ents.length,paths.length)*64+60);
+  let svgContent='';
+  paths.forEach((path,pi)=>{
+    const y=40+pi*64,x=W-185;
+    svgContent+=`<g>
+      <rect x="${x}" y="${y-13}" width="178" height="26" rx="7" fill="rgba(249,115,22,.07)" stroke="rgba(249,115,22,.2)" stroke-width="1.5"/>
+      <text x="${x+7}" y="${y+4}" fill="#fb923c" font-size="10" font-family="monospace" dominant-baseline="middle">${esc(path.length>22?path.slice(0,20)+'…':path)}</text>
+    </g>`;
+  });
+  ents.forEach(([name,meta],vi)=>{
+    const y=40+vi*60,col=SCOL[meta.syn]||'#fb923c';
+    meta.paths.forEach(path=>{
+      const pi=paths.indexOf(path); if(pi<0) return;
+      const ty=40+pi*64,x1=120,y1=y,x2=W-185,y2=ty,mx=(x1+x2)/2;
+      svgContent+=`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="${col}" stroke-width="1.5" stroke-dasharray="4 3" opacity=".38"/>`;
+    });
+    svgContent+=`<g>
+      <rect x="6" y="${y-13}" width="114" height="26" rx="7" fill="${col}18" stroke="${col}40" stroke-width="1.5"/>
+      <text x="14" y="${y+4}" fill="${col}" font-size="11" font-family="monospace" font-weight="600" dominant-baseline="middle">${esc(name.length>12?name.slice(0,11)+'…':name)}</text>
+    </g>`;
+  });
+  return `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet glass2">
+      <div class="sheet-head">
+        <div><div class="sheet-title">Dependency Map</div><div class="sheet-sub">Variables mapped to JSON fields</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="closeModal()">${ic('close',14)}</button>
+      </div>
+      <div class="sheet-body" style="padding:14px 20px 22px">
+        ${ents.length===0
+          ?`<div style="text-align:center;padding:40px;color:var(--tx3)">No variables detected</div>`
+          :`<div style="overflow-x:auto"><svg width="100%" viewBox="0 0 ${W} ${H}" style="min-width:280px">${svgContent}</svg></div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── PROFILES MODAL ───────────────────────────── */
+function modalProfiles(){
+  return `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet glass2">
+      <div class="sheet-head">
+        <div><div class="sheet-title">Fill Profiles</div><div class="sheet-sub">Save and swap named value sets</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="closeModal()">${ic('close',14)}</button>
+      </div>
+      <div id="profiles-list" class="sheet-body" style="padding:13px 20px 0"></div>
+      <div style="padding:11px 20px 20px;border-top:1px solid var(--bd);flex-shrink:0" id="profiles-save-area">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;gap:6px" onclick="showProfileSave()">
+          ${ic('save',14)} Save Current as Profile
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+function renderProfilesList(){
+  const el=document.getElementById('profiles-list'); if(!el) return;
+  if(S.profs.length===0){
+    el.innerHTML=`<div style="text-align:center;padding:24px 0;color:var(--tx3)"><div style="font-size:28px;margin-bottom:7px;opacity:.25">👤</div><div style="font-size:13px;font-weight:600;color:var(--tx2)">No profiles yet</div><div style="font-size:11px;margin-top:3px">Save current values as a profile</div></div>`;
+    return;
+  }
+  el.innerHTML=S.profs.map(p=>`
+    <div style="background:var(--bh);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">${esc(p.name)}</div>
+        <div style="font-size:10px;color:var(--tx3);margin-top:2px">${Object.values(p.values).filter(Boolean).length}/${Object.keys(p.values).length} filled</div>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-orange" style="padding:4px 9px;font-size:11px" onclick="applyProfile('${p.id}')">Apply</button>
+        <button class="btn btn-danger" style="padding:4px 7px" onclick="delProfile('${p.id}')">${ic('trash',12)}</button>
+      </div>
+    </div>`).join('');
+}
+function showProfileSave(){
+  const area=document.getElementById('profiles-save-area');
+  area.innerHTML=`<div style="display:flex;gap:7px">
+    <input id="prof-name-inp" class="inp" placeholder="Profile name…" style="flex:1;font-size:12px;padding:7px 10px" autofocus
+      onkeydown="if(event.key==='Enter')doSaveProfile();if(event.key==='Escape')cancelProfileSave()"/>
+    <button class="btn btn-primary" style="padding:6px 12px;font-size:12px" onclick="doSaveProfile()">Save</button>
+    <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px" onclick="cancelProfileSave()">✕</button>
+  </div>`;
+  setTimeout(()=>document.getElementById('prof-name-inp').focus(),50);
+}
+function cancelProfileSave(){
+  document.getElementById('profiles-save-area').innerHTML=`<button class="btn btn-primary" style="width:100%;justify-content:center;gap:6px" onclick="showProfileSave()">${ic('save',14)} Save Current as Profile</button>`;
+}
+function doSaveProfile(){
+  const name=document.getElementById('prof-name-inp').value.trim(); if(!name) return;
+  const item={id:Date.now().toString(),name,values:{...S.vals},savedAt:Date.now()};
+  S.profs=[...S.profs,item]; lset(LS.PF,S.profs);
+  toast('Profile "'+name+'" saved!'); renderProfilesList(); cancelProfileSave();
+}
+function applyProfile(id){
+  const p=S.profs.find(x=>x.id===id); if(!p) return;
+  S.vals=p.values; recompute(); closeModal(); toast('Profile applied','info'); renderAll();
+}
+function delProfile(id){
+  S.profs=S.profs.filter(p=>p.id!==id); lset(LS.PF,S.profs);
+  renderProfilesList(); toast('Deleted','error');
+}
+
+/* ── SHARE MODAL ──────────────────────────────── */
+function modalShare(){
+  return `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet glass2">
+      <div class="sheet-head">
+        <div><div class="sheet-title">Share via Link</div><div class="sheet-sub">No server — encoded in the URL</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="closeModal()">${ic('close',14)}</button>
+      </div>
+      <div style="padding:16px 20px 22px;display:flex;flex-direction:column;gap:12px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border-radius:9px;background:var(--bh);border:1px solid var(--bd)">
+          <input type="checkbox" id="share-inc-vals" style="accent-color:var(--or);width:15px;height:15px" onchange="updateShareLink()"/>
+          <div><div style="font-size:13px;font-weight:600;color:var(--tx)">Include my filled values</div><div style="font-size:11px;color:var(--tx3)">Recipients see your values pre-loaded</div></div>
+        </label>
+        <div>
+          <div class="modal-label">Share link</div>
+          <div style="display:flex;gap:7px">
+            <input id="share-link-inp" class="inp" readonly style="flex:1;font-size:10px;font-family:monospace;padding:7px 10px"/>
+            <button id="share-copy-btn" class="btn btn-primary" style="padding:6px 12px;font-size:12px;gap:5px" onclick="copyShareLink()">
+              ${ic('copy',13)} Copy
+            </button>
+          </div>
+        </div>
+        <div style="padding:9px 12px;border-radius:8px;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.17);font-size:11px;color:#93c5fd;line-height:1.6">
+          Encoded in the URL — no data leaves your device.
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function getShareLink(incVals){
+  try{
+    const d={raw:S.raw,vars:Object.fromEntries(Object.entries(S.vars).map(([k,v])=>[k,{syn:v.syn}])),vals:incVals?S.vals:{}};
+    return window.location.href.split('?')[0]+'?pf='+btoa(unescape(encodeURIComponent(JSON.stringify(d))));
+  }catch{ return ''; }
+}
+function updateShareLink(){
+  const inc=(document.getElementById('share-inc-vals')||{}).checked||false;
+  const inp=document.getElementById('share-link-inp');
+  if(inp) inp.value=getShareLink(inc);
+}
+async function copyShareLink(){
+  const inc=(document.getElementById('share-inc-vals')||{}).checked||false;
+  const link=getShareLink(inc);
+  try{
+    await navigator.clipboard.writeText(link);
+    const btn=document.getElementById('share-copy-btn');
+    if(btn){ btn.innerHTML=ic('check',13)+' Copied!'; btn.style.color='#4ade80'; }
+    setTimeout(()=>{ if(btn){ btn.innerHTML=ic('copy',13)+' Copy'; btn.style.color=''; } },2200);
+  }catch(e){ toast('Copy failed','error'); }
+}
+
+/* ── EXPORT MODAL ─────────────────────────────── */
+function modalExport(){
+  return `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet glass2">
+      <div class="sheet-head">
+        <div><div class="sheet-title">Export</div><div class="sheet-sub">Download or copy in any format</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="closeModal()">${ic('close',14)}</button>
+      </div>
+      <div style="padding:14px 20px 22px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:5px;flex-wrap:wrap" id="fmt-tabs">
+          ${['json','txt','env','curl','schema'].map(f=>`<button class="type-btn ${f==='json'?'active':''}" onclick="selectExportFmt(this,'${f}')">${{json:'JSON',txt:'Text',env:'.env',curl:'cURL',schema:'Schema'}[f]}</button>`).join('')}
+        </div>
+        <div style="background:rgba(0,0,0,.22);border-radius:9px;padding:11px;border:1.5px solid var(--s4);max-height:170px;overflow:auto">
+          <pre id="export-preview" style="font-family:monospace;font-size:11px;color:var(--tx2);white-space:pre-wrap;word-break:break-word"></pre>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button id="exp-copy-btn" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;gap:5px" onclick="copyExport()">
+            ${ic('copy',13)} Copy
+          </button>
+          <button class="btn btn-primary" style="padding:6px 12px;font-size:12px;gap:5px" onclick="downloadExport()">
+            ${ic('exp',13)} Download
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+window._exportFmt='json';
+function getExportContent(fmt){
+  const fmts={
+    json: ()=>S.out||'{}',
+    txt:  ()=>S.out||'',
+    env:  ()=>Object.entries(S.vals).map(([k,v])=>k.toUpperCase()+'="'+(v||'')+'"').join('\n'),
+    curl: ()=>'curl https://api.anthropic.com/v1/messages \\\n  -H "Content-Type: application/json" \\\n  -H "x-api-key: $ANTHROPIC_API_KEY" \\\n  -d \''+(S.out||'{}')+"\\'",
+    schema:()=>JSON.stringify({type:'object',properties:Object.fromEntries(Object.entries(S.vars).map(([k,v])=>[k,{type:'string',description:k+' ('+v.syn+')'}])),required:Object.keys(S.vars)},null,2),
+  };
+  return (fmts[fmt]||fmts.json)();
+}
+function selectExportFmt(btn,fmt){
+  window._exportFmt=fmt;
+  document.querySelectorAll('#fmt-tabs .type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const prev=document.getElementById('export-preview');
+  if(prev) prev.textContent=getExportContent(fmt);
+}
+async function copyExport(){
+  const content=getExportContent(window._exportFmt||'json');
+  try{
+    await navigator.clipboard.writeText(content);
+    const btn=document.getElementById('exp-copy-btn');
+    if(btn){ btn.innerHTML=ic('check',13)+' Copied!'; btn.style.color='#4ade80'; }
+    setTimeout(()=>{ if(btn){ btn.innerHTML=ic('copy',13)+' Copy'; btn.style.color=''; } },2200);
+  }catch(e){ toast('Copy failed','error'); }
+}
+function downloadExport(){
+  const fmt=window._exportFmt||'json';
+  const ext={json:'json',txt:'txt',env:'env',curl:'sh',schema:'json'}[fmt]||'txt';
+  const content=getExportContent(fmt);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:'text/plain'}));
+  a.download='prompt.'+ext; a.click();
+}
+
+/* ── CHAINS MODAL ─────────────────────────────── */
+window._chainTab='list';
+window._chainSel=[];
+window._chainName='';
+function modalChains(){
+  return `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet wide glass2">
+      <div class="sheet-head">
+        <div><div class="sheet-title">Prompt Chains</div><div class="sheet-sub">Output of A feeds into B</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="closeModal()">${ic('close',14)}</button>
+      </div>
+      <div style="padding:11px 20px 0;flex-shrink:0">
+        <div class="tab-bar glass" style="border-radius:8px;padding:3px">
+          <button class="tab-btn ${window._chainTab==='list'?'active':''}" onclick="setChainTab('list')">My Chains</button>
+          <button class="tab-btn ${window._chainTab==='create'?'active':''}" onclick="setChainTab('create')">+ New Chain</button>
+        </div>
+      </div>
+      <div id="chains-body" class="sheet-body" style="padding:11px 20px 20px"></div>
+    </div>
+  </div>`;
+}
+function renderChainsBody(){
+  const el=document.getElementById('chains-body'); if(!el) return;
+  if(window._chainTab==='list'){
+    if(S.chains.length===0){
+      el.innerHTML=`<div style="text-align:center;padding:36px 0;color:var(--tx3)"><div style="font-size:28px;margin-bottom:7px;opacity:.25">🔗</div><div style="font-size:13px;font-weight:600;color:var(--tx2)">No chains yet</div></div>`;
+      return;
+    }
+    el.innerHTML=S.chains.map(ch=>`
+      <div style="border-radius:10px;border:1.5px solid var(--bd);padding:12px;background:var(--bh);margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+          <span style="font-size:14px;font-weight:700;color:var(--tx)">${esc(ch.name)}</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-orange" style="padding:4px 9px;font-size:11px" onclick="runChain('${ch.id}')">Run</button>
+            <button class="btn btn-danger" style="padding:4px 7px" onclick="delChain('${ch.id}')">${ic('trash',12)}</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          ${ch.steps.map((id,i)=>{
+            const p=S.prompts.find(x=>x.id===id);
+            return `<span style="padding:3px 9px;border-radius:99px;background:rgba(249,115,22,.10);border:1px solid rgba(249,115,22,.28);font-size:11px;color:${OR};font-weight:600">${esc(p?p.name:'?')}</span>${i<ch.steps.length-1?`<span style="color:${OR}">→</span>`:''}`;
+          }).join('')}
+        </div>
+      </div>`).join('');
+  } else {
+    const sel=window._chainSel;
+    el.innerHTML=`
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div class="modal-label">Chain Name</div>
+          <input id="chain-name-inp" class="inp" placeholder="e.g. Blog Writer Pipeline…" style="font-size:12px;padding:8px 11px" value="${esc(window._chainName)}" oninput="window._chainName=this.value"/>
+        </div>
+        <div>
+          <div class="modal-label" style="margin-bottom:6px">Pick prompts in order</div>
+          ${S.prompts.length===0?'<div style="color:var(--tx3);font-size:12px">Save prompts to library first</div>':''}
+          ${S.prompts.map(p=>`
+            <div onclick="toggleChainSel('${p.id}')" style="padding:8px 11px;border-radius:7px;margin-bottom:5px;cursor:pointer;border:1.5px solid ${sel.includes(p.id)?'rgba(249,115,22,.28)':'var(--bd)'};background:${sel.includes(p.id)?'rgba(249,115,22,.08)':'var(--bh)'};display:flex;justify-content:space-between;align-items:center;transition:all .15s">
+              <span style="font-size:13px;font-weight:600;color:${sel.includes(p.id)?OR:'var(--tx)'}">${esc(p.name)}</span>
+              ${sel.includes(p.id)?tag(OR,sel.indexOf(p.id)+1+'','font-size:8px'):''}
+            </div>`).join('')}
+        </div>
+        ${sel.length>1?`
+        <div>
+          <div class="modal-label" style="margin-bottom:6px">Order</div>
+          ${sel.map((id,i)=>{
+            const p=S.prompts.find(x=>x.id===id);
+            return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+              <div style="flex:1;padding:6px 10px;border-radius:7px;background:var(--bh);border:1.5px solid var(--bd);font-size:12px;font-weight:600;color:${OR}">${i+1}. ${esc(p?p.name:'?')}</div>
+              <button class="btn btn-ghost" style="padding:4px 7px;font-size:12px" onclick="reorderChainSel(${i},-1)" ${i===0?'disabled':''}>↑</button>
+              <button class="btn btn-ghost" style="padding:4px 7px;font-size:12px" onclick="reorderChainSel(${i},1)" ${i===sel.length-1?'disabled':''}>↓</button>
+            </div>`;
+          }).join('')}
+        </div>`:``}
+        <button class="btn btn-primary" style="width:100%;justify-content:center;gap:5px;opacity:${(!window._chainName.trim()||sel.length<2)?0.4:1}"
+          ${(!window._chainName.trim()||sel.length<2)?'disabled':''}
+          onclick="doSaveChain()">
+          ${ic('chain',14)} Create Chain (${sel.length} prompts)
+        </button>
+      </div>`;
+  }
+}
+function setChainTab(t){ window._chainTab=t; renderModal('chain'); setTimeout(()=>renderChainsBody(),0); }
+function toggleChainSel(id){
+  const s=window._chainSel;
+  window._chainSel=s.includes(id)?s.filter(x=>x!==id):[...s,id];
+  renderChainsBody();
+}
+function reorderChainSel(i,d){
+  const a=[...window._chainSel]; const ni=i+d;
+  if(ni<0||ni>=a.length) return;
+  [a[i],a[ni]]=[a[ni],a[i]]; window._chainSel=a; renderChainsBody();
+}
+function doSaveChain(){
+  const name=window._chainName.trim(); const sel=window._chainSel;
+  if(!name||sel.length<2) return;
+  const ch={id:Date.now().toString(),name,steps:[...sel],createdAt:Date.now()};
+  S.chains=[...S.chains,ch]; lset(LS.CH,S.chains);
+  window._chainTab='list'; window._chainSel=[]; window._chainName='';
+  renderModal('chain'); setTimeout(()=>renderChainsBody(),0);
+  toast('Chain "'+name+'" created!'); renderAll();
+}
+function delChain(id){
+  S.chains=S.chains.filter(c=>c.id!==id); lset(LS.CH,S.chains);
+  renderChainsBody(); toast('Deleted','error'); renderAll();
+}
+function runChain(id){
+  const ch=S.chains.find(c=>c.id===id); if(!ch) return;
+  const first=S.prompts.find(p=>p.id===ch.steps[0]); if(first) loadPrompt(first.id);
+  toast('Running "'+ch.name+'"…','info');
+}
+
+/* ── THEME MODAL ──────────────────────────────── */
+function modalTheme(){
+  return `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet glass2">
+      <div class="sheet-head">
+        <div><div class="sheet-title">Theme</div><div class="sheet-sub">Choose your look</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="closeModal()">${ic('close',14)}</button>
+      </div>
+      <div style="padding:14px 20px 22px;display:flex;flex-direction:column;gap:7px">
+        ${[['dark','Dark','moon'],['light','Light','sun'],['amoled','AMOLED','moon']].map(([id,l,icn])=>`
+          <button onclick="changeTheme('${id}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;border:1.5px solid ${S.theme===id?OR:'var(--bd)'};background:${S.theme===id?'rgba(249,115,22,.09)':'var(--bh)'};color:var(--tx);transition:all .15s;cursor:pointer;font-family:inherit">
+            <div style="display:flex;align-items:center;gap:9px">${ic(icn,15)}<span style="font-size:14px;font-weight:700">${l}</span></div>
+            ${S.theme===id?tag('#4ade80','Active','font-size:8px'):''}
+          </button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+function changeTheme(id){
+  S.theme=id; lset(LS.TH,id);
+  document.body.dataset.theme=id;
+  toast(id+' theme','info'); closeModal(); renderAll();
+}
+
+/* ─────────────────────────────────────────────────
+   INIT
+───────────────────────────────────────────────── */
+function init(){
+  document.body.dataset.theme=S.theme;
+
+  // Load from URL ?pf=…
+  try{
+    const sp=new URLSearchParams(window.location.search);
+    const pf=sp.get('pf');
+    if(pf){
+      const d=JSON.parse(decodeURIComponent(escape(atob(pf))));
+      if(d.raw){ S.raw=d.raw; }
+      if(d.vals){ Object.assign(S.vals,d.vals); }
+    }
+  }catch(e){}
+
+  // Set textarea
+  const dt=document.getElementById('json-textarea');
+  if(dt){
+    dt.value=S.raw;
+    dt.addEventListener('input',e=>{
+      S.raw=e.target.value;
+      parse(S.raw); recompute(); renderAll();
+    });
+  }
+
+  parse(S.raw); recompute(); renderAll();
+
+  // Init modal side effects
+  document.addEventListener('click',e=>{
+    // After lib modal renders, update list
+    if(document.getElementById('lib-sheet')&&document.getElementById('lib-list')&&!document.getElementById('lib-list').innerHTML){
+      window._libFilter='All'; renderLibList();
+    }
+  });
+
+  // Observer for modal rendering side-effects
+  const mo=new MutationObserver(()=>{
+    if(document.getElementById('lib-list')!==null){
+      if(!document.getElementById('lib-list').innerHTML){ window._libFilter='All'; renderLibList(); }
+    }
+    if(document.getElementById('profiles-list')!==null&&!document.getElementById('profiles-list').innerHTML){
+      renderProfilesList();
+    }
+    if(document.getElementById('export-preview')!==null&&!document.getElementById('export-preview').textContent){
+      window._exportFmt='json';
+      document.getElementById('export-preview').textContent=getExportContent('json');
+    }
+    if(document.getElementById('chains-body')!==null&&!document.getElementById('chains-body').innerHTML){
+      renderChainsBody();
+    }
+    if(document.getElementById('share-link-inp')!==null&&!document.getElementById('share-link-inp').value){
+      updateShareLink();
+    }
+  });
+  mo.observe(document.getElementById('modal-container'),{childList:true,subtree:true});
+}
+
+init();
+</script>
+</body>
+</html>

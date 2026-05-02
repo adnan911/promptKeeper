@@ -39,9 +39,39 @@ export function getTagColor(tag) {
   return TAG_PALETTE[h];
 }
 
+export const PATS = [
+  { re: /\{\{([^}]+)\}\}/g, syn: 'handlebars', o: '{{', c: '}}' },
+  { re: /\$\{([^}]+)\}/g,   syn: 'template',   o: '${', c: '}'  },
+  { re: /\[([A-Z_][A-Z0-9_]*)\]/g, syn: 'bracket', o: '[', c: ']' },
+  { re: /%([A-Z_][A-Z0-9_]*)%/g,   syn: 'percent',  o: '%', c: '%' },
+];
+
+export const UNRE = /(\{\{[^}]+\}\}|\$\{[^}]+\}|\[[A-Z_][A-Z0-9_]*\]|%[A-Z_][A-Z0-9_]*%)/g;
+
 export function extractVars(text) {
-  return [...new Set([...text.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]))];
+  if (!text) return [];
+  const out = [];
+  const seen = new Set();
+  
+  PATS.forEach(p => {
+    const matches = [...text.matchAll(new RegExp(p.re.source, 'g'))];
+    matches.forEach(m => {
+      const name = m[1].trim();
+      if (!seen.has(name)) {
+        seen.add(name);
+        out.push({
+          name,
+          syn: p.syn,
+          o: p.o,
+          c: p.c
+        });
+      }
+    });
+  });
+  
+  return out;
 }
+
 
 const now = Date.now();
 

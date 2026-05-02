@@ -443,9 +443,6 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
       </div>
 
       <div style={{ padding: '24px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--bg-panel)', backdropFilter: 'blur(12px)' }}>
-        <button className="btn btn-v btn-fw btn-lg" onClick={onNew} style={{ padding: '16px', fontWeight: 700, letterSpacing: 1 }}>
-          + ADD NEW PROMPT
-        </button>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-g btn-fw" onClick={onImportExport} style={{ padding: '12px', fontSize: 12, flex: 1 }}>
             ⇅ DATA MANAGEMENT
