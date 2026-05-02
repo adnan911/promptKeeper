@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { getTagColor, MODEL_COLORS } from '../data.js';
 
 export function TagPill({ tag, active, onClick, removable, onRemove, size = 'md' }) {
@@ -127,3 +128,37 @@ export function UsageChart({ history = [], uses }) {
   );
 }
 
+export function ConfirmModal({ title, message, type = 'confirm', inputPlaceholder, onConfirm, onCancel }) {
+  const [val, setVal] = useState('');
+  return (
+    <div className="modal-overlay" onClick={onCancel} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 9999 }}>
+      <div 
+        className="glass-panel" 
+        onClick={e => e.stopPropagation()} 
+        style={{ width: 400, maxWidth: '90%', display: 'flex', flexDirection: 'column', animation: 'scaleIn 0.2s ease-out' }}
+      >
+        <div style={{ padding: '24px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+          <span className="ft" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', letterSpacing: 1 }}>{title || 'CONFIRM'}</span>
+          <button onClick={onCancel} style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: 20, cursor: 'pointer', opacity: 0.6 }} onMouseOver={e => e.currentTarget.style.opacity=1} onMouseOut={e => e.currentTarget.style.opacity=0.6}>✕</button>
+        </div>
+        <div style={{ padding: '24px', fontSize: 14, color: 'var(--text)', lineHeight: 1.5 }}>
+          {message}
+          {type === 'prompt' && (
+            <input 
+              autoFocus
+              value={val} 
+              onChange={e => setVal(e.target.value)} 
+              placeholder={inputPlaceholder || "Type here..."} 
+              onKeyDown={e => e.key === 'Enter' && onConfirm(val)}
+              style={{ marginTop: 16, width: '100%', padding: '12px', border: '1px solid var(--border-light)', background: 'rgba(0,0,0,0.2)', color: 'var(--text)', borderRadius: 'var(--radius-sm)' }}
+            />
+          )}
+        </div>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-light)', display: 'flex', gap: 12, justifyContent: 'flex-end', background: 'rgba(255,255,255,0.02)' }}>
+          <button className="btn btn-d" onClick={onCancel} style={{ padding: '8px 16px' }}>CANCEL</button>
+          <button className="btn btn-v" onClick={() => onConfirm(type === 'prompt' ? val : true)} style={{ padding: '8px 16px' }}>{type === 'prompt' ? 'SUBMIT' : 'CONFIRM'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}

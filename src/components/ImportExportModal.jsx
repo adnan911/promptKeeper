@@ -48,99 +48,104 @@ export default function ImportExportModal({ prompts, onImport, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}>
       <div
-        className="asu"
+        className="asu glass-panel"
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 580, background: '#fff',
-          border: 'var(--nb-border)',
-          boxShadow: 'var(--nb-shadow-lg)',
-          borderRadius: 0,
+          width: '100%', maxWidth: 600, 
+          margin: '20px',
         }}
       >
         {/* Header / Tabs */}
-        <div style={{ padding: '0 24px', borderBottom: 'var(--nb-border-sm)', display: 'flex', alignItems: 'center', background: '#fff' }}>
+        <div style={{ padding: '0 24px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
           {['export', 'import'].map(t => (
             <button
               key={t}
               onClick={() => { setTab(t); setErr(''); }}
               className="ft"
               style={{
-                background: tab === t ? 'var(--accent)' : 'none',
+                background: 'transparent',
                 border: 'none',
-                borderRight: '1px solid #000',
-                fontSize: 12,
+                fontSize: 14,
                 letterSpacing: 1,
-                fontWeight: 900,
-                color: '#000',
-                padding: '20px 24px',
+                fontWeight: 600,
+                color: tab === t ? 'var(--text)' : 'var(--text-dim)',
+                padding: '24px',
                 cursor: 'pointer',
-                transition: 'all .1s',
+                transition: 'all .2s ease',
                 textTransform: 'uppercase',
-                borderBottom: tab === t ? '2px solid #000' : 'none',
+                borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
                 marginBottom: -1,
+                opacity: tab === t ? 1 : 0.6
               }}
             >
               {t} DATA
             </button>
           ))}
-          <button onClick={onClose} style={{ background: '#000', color: '#fff', fontSize: 18, padding: '0 10px', height: 32, border: '1px solid #000', marginLeft: 'auto', fontWeight: 900 }}>×</button>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 20, width: 36, height: 36, borderRadius: '50%', border: 'none', marginLeft: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}>✕</button>
         </div>
 
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           {tab === 'export' ? (
             <>
-              <div style={{ fontSize: 13, color: '#000', fontWeight: 800, textTransform: 'uppercase' }}>
-                VAULT EXPORT <span style={{ color: '#666' }}>// {prompts.length} ITEMS</span>
+              <div className="ft" style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                VAULT EXPORT <span style={{ color: 'var(--text-sub)' }}>// {prompts.length} ITEMS</span>
               </div>
               <div style={{ position: 'relative' }}>
                 <textarea
                   readOnly
                   value={json}
                   style={{ 
-                    minHeight: 240, 
-                    fontSize: 11, 
-                    color: '#000', 
-                    lineHeight: 1.5, 
+                    minHeight: 280, 
+                    fontSize: 13, 
+                    color: 'var(--text)', 
+                    lineHeight: 1.6, 
                     cursor: 'text', 
-                    border: 'var(--nb-border-sm)', 
-                    background: '#f8f8f8',
+                    border: '1px solid var(--border-light)', 
+                    background: 'rgba(0,0,0,0.2)',
                     fontFamily: 'JetBrains Mono,monospace',
-                    fontWeight: 500
+                    fontWeight: 400,
+                    borderRadius: 'var(--radius)',
+                    padding: '16px',
+                    boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)'
                   }}
                 />
               </div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button className="btn btn-v btn-fw btn-lg" onClick={doExport} style={{ fontWeight: 900 }}>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <button className="btn btn-v btn-fw btn-lg" onClick={doExport} style={{ fontWeight: 600, letterSpacing: 0.5 }}>
                   ⬇ DOWNLOAD .JSON
                 </button>
-                <button className="btn btn-g btn-lg" onClick={copyJson} style={{ flexShrink: 0, minWidth: 140, fontWeight: 900 }}>
+                <button className="btn btn-g btn-lg" onClick={copyJson} style={{ flexShrink: 0, minWidth: 160, fontWeight: 600, letterSpacing: 0.5 }}>
                   {copied ? '✓ COPIED' : 'COPY JSON'}
                 </button>
               </div>
             </>
           ) : (
             <>
-              <div style={{ fontSize: 13, color: '#000', fontWeight: 800, textTransform: 'uppercase' }}>
-                IMPORT DATA <span style={{ color: '#666' }}>// PASTE JSON ARRAY</span>
+              <div className="ft" style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                IMPORT DATA <span style={{ color: 'var(--text-sub)' }}>// PASTE JSON ARRAY</span>
               </div>
               <textarea
                 value={importText}
                 onChange={e => { setImportText(e.target.value); setErr(''); }}
                 placeholder={'[\n  {\n    "title": "MY PROMPT",\n    "body": "...",\n    "tags": ["AI"],\n    "category": "CODING",\n    "model": "CLAUDE"\n  }\n]'}
                 style={{ 
-                  minHeight: 240, 
-                  fontSize: 12, 
+                  minHeight: 280, 
+                  fontSize: 13, 
                   lineHeight: 1.6, 
-                  border: 'var(--nb-border-sm)', 
-                  background: '#fff',
+                  border: '1px solid var(--border-light)', 
+                  background: 'rgba(0,0,0,0.2)',
+                  color: 'var(--text)',
                   fontFamily: 'JetBrains Mono,monospace',
-                  fontWeight: 500
+                  fontWeight: 400,
+                  borderRadius: 'var(--radius)',
+                  padding: '16px',
+                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)'
                 }}
               />
               {err && (
-                <div style={{ background: 'var(--danger)', border: 'var(--nb-border-sm)', color: '#fff', padding: '10px 16px', fontSize: 12, fontWeight: 900 }}>
+                <div style={{ background: 'var(--danger)', border: 'none', borderRadius: 'var(--radius-sm)', color: '#fff', padding: '12px 16px', fontSize: 13, fontWeight: 600, boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)' }}>
                   ⚠ ERROR: {err.toUpperCase()}
                 </div>
               )}
@@ -148,7 +153,7 @@ export default function ImportExportModal({ prompts, onImport, onClose }) {
                 className="btn btn-v btn-fw btn-lg"
                 onClick={doImport}
                 disabled={!importText.trim()}
-                style={{ opacity: importText.trim() ? 1 : 0.4, fontWeight: 900 }}
+                style={{ opacity: importText.trim() ? 1 : 0.4, fontWeight: 600, letterSpacing: 0.5 }}
               >
                 ⬆ INITIALIZE IMPORT
               </button>

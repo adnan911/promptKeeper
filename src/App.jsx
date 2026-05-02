@@ -5,7 +5,7 @@ import DetailPanel from './components/DetailPanel.jsx';
 import PromptModal from './components/PromptModal.jsx';
 import ImportExportModal from './components/ImportExportModal.jsx';
 import logo from './assets/logo.jpg';
-import { Toast } from './components/UI.jsx';
+import { Toast, ConfirmModal } from './components/UI.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
 import { useLocalStorage, useToast, useKeyboard } from './hooks.js';
 import { SEED_PROMPTS, DEFAULT_CAT_COLORS } from './data.js';
@@ -44,6 +44,11 @@ export default function App() {
   const [showIO, setShowIO]           = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme]             = useLocalStorage('pk_theme', 'dark');
+  const [confirmConfig, setConfirmConfig] = useState(null);
+
+  const requestConfirm = useCallback((config) => {
+    setConfirmConfig(config);
+  }, []);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
@@ -280,6 +285,9 @@ export default function App() {
         onUpdateModelColor={updateModelColor}
         onRenameModel={renameModel}
         onDeleteModel={deleteModel}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        requestConfirm={requestConfirm}
       />
 
       <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
@@ -293,17 +301,20 @@ export default function App() {
         {/* Unified Toolbar Row */}
         <div style={{ 
           padding: '12px 20px', 
-          borderBottom: 'var(--nb-border-sm)', 
+          borderBottom: '1px solid var(--border-light)', 
           display: 'flex', 
           alignItems: 'center',
           gap: 16,
-          background: 'var(--bg-sub)', 
+          background: 'var(--bg-panel)', 
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           flexShrink: 0,
-          flexWrap: 'wrap'
+          flexWrap: 'wrap',
+          zIndex: 40
         }}>
           {/* Collection Info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 10, color: 'var(--text-sub)', fontWeight: 800, whiteSpace: 'nowrap' }}>
+            <span className="ft" style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 600, whiteSpace: 'nowrap' }}>
               {filtered.length} ITEMS
             </span>
           </div>
@@ -311,16 +322,16 @@ export default function App() {
           {/* Search Bar */}
           <div style={{ flex: 1, position: 'relative', minWidth: 200, display: 'flex', gap: 8 }}>
             <div style={{ flex: 1, position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text)', fontSize: 16, fontWeight: 900, pointerEvents: 'none' }}>⌕</span>
+              <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-sub)', fontSize: 16, fontWeight: 600, pointerEvents: 'none' }}>⌕</span>
               <input
                 id="search-input"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder={window.innerWidth <= 768 ? "SEARCH..." : "SEARCH PROMPTS... ⌘K"}
-                style={{ paddingLeft: 38, fontSize: 12, border: 'var(--nb-border-sm)', height: 36, width: '100%' }}
+                style={{ paddingLeft: 40, height: 40 }}
               />
             </div>
-            <select value={sort} onChange={e => setSort(e.target.value)} style={{ width: 120, fontSize: 11, border: 'var(--nb-border-sm)', height: 36, background: 'var(--bg-sub)', color: 'var(--text)', flexShrink: 0 }}>
+            <select value={sort} onChange={e => setSort(e.target.value)} style={{ width: 130, height: 40, flexShrink: 0 }}>
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label.toUpperCase()}</option>)}
             </select>
           </div>
@@ -328,28 +339,25 @@ export default function App() {
           {/* System Actions */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {hasFilters && (
-              <button className="btn btn-d btn-sm" onClick={() => { setSearch(''); setTagFilter(''); setModelFilter('All'); setCatFilter('All'); }} style={{ height: 36, padding: '0 12px' }}>
+              <button className="btn btn-d btn-sm" onClick={() => { setSearch(''); setTagFilter(''); setModelFilter('All'); setCatFilter('All'); }} style={{ height: 40, padding: '0 14px' }}>
                 ✕
               </button>
             )}
-            <button className="btn btn-g btn-sm" onClick={toggleTheme} title="Toggle Dark Mode" style={{ height: 36, padding: '0 10px' }}>
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
-            <button className="btn btn-c btn-sm hide-mobile" onClick={openNew} style={{ padding: '0 16px', height: 36, fontWeight: 900 }}>
+            <button className="btn btn-c btn-sm hide-mobile" onClick={openNew} style={{ padding: '0 20px', height: 40 }}>
               + NEW
             </button>
           </div>
         </div>
 
         {/* Cards */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 32px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 40px' }}>
           {filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '100px 20px', border: 'var(--nb-border)', background: 'var(--bg-sub)', boxShadow: 'var(--nb-shadow)' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>∅</div>
-              <div className="ft" style={{ fontSize: 18, marginBottom: 8, color: 'var(--text)' }}>
+            <div className="glass-panel" style={{ textAlign: 'center', padding: '100px 20px' }}>
+              <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.5 }}>∅</div>
+              <div className="ft" style={{ fontSize: 20, marginBottom: 8, color: 'var(--text)' }}>
                 {hasFilters ? 'NO MATCHES FOUND' : 'VAULT IS EMPTY'}
               </div>
-              <div style={{ fontSize: 13, marginBottom: 24, fontWeight: 600 }}>
+              <div style={{ fontSize: 14, marginBottom: 28, color: 'var(--text-sub)' }}>
                 {hasFilters ? 'TRY CLEARING YOUR FILTERS' : 'START BY CREATING YOUR FIRST PROMPT'}
               </div>
               {hasFilters
@@ -358,7 +366,7 @@ export default function App() {
               }
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
               {filtered.map(p => (
                 <PromptCard
                   key={p.id} p={p}
@@ -387,11 +395,23 @@ export default function App() {
           linkedPrompt={prompts.find(x => x.id == activePrompt.linkedPromptId)}
           isOpen={!!activePrompt}
           modelColors={modelColors}
+          requestConfirm={requestConfirm}
         />
       )}
 
-      {showModal && <PromptModal initial={editPrompt} prompts={prompts} categories={categories} modelColors={modelColors} onSave={savePrompt} onClose={() => { setShowModal(false); setEditPrompt(null); }} />}
+      {showModal && <PromptModal initial={editPrompt} prompts={prompts} categories={categories} modelColors={modelColors} onSave={savePrompt} onClose={() => { setShowModal(false); setEditPrompt(null); }} onAddCat={addCategory} onAddModel={addModel} />}
       {showIO && <ImportExportModal prompts={prompts} onImport={importPrompts} onClose={() => setShowIO(false)} />}
+      
+      {confirmConfig && (
+        <ConfirmModal 
+          {...confirmConfig} 
+          onCancel={() => setConfirmConfig(null)} 
+          onConfirm={(val) => { 
+            confirmConfig.onConfirm(val); 
+            setConfirmConfig(null); 
+          }} 
+        />
+      )}
 
       <Toast toasts={toasts} />
       {!onboardingDone && <OnboardingModal onChoose={handleOnboarding} />}
@@ -404,12 +424,12 @@ export default function App() {
           style={{
             position: 'fixed', bottom: 32,
             right: activePrompt ? 384 : 32,
-            width: 64, height: 64, borderRadius: 0,
-            background: 'var(--secondary)',
-            border: 'var(--nb-border)',
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'var(--primary)',
+            border: 'none',
             color: '#000', fontSize: 32,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: 'var(--nb-shadow)',
+            boxShadow: 'var(--shadow-primary)',
             zIndex: 50,
           }}
         >+</button>
