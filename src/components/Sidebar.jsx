@@ -68,6 +68,12 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
       </div>
 
       <div style={{ padding: '24px 0', flex: 1 }}>
+        <div style={{ padding: '0 16px 24px' }}>
+          <button className="btn btn-c btn-fw" onClick={onNew} style={{ padding: '14px', fontSize: 13, gap: 10, borderRadius: 0, fontWeight: 900 }}>
+            <span style={{ fontSize: 18 }}>+</span> NEW PROMPT
+          </button>
+        </div>
+
         {/* Collections Box */}
         <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius)', margin: '0 16px 20px', padding: '16px 12px', boxShadow: 'var(--shadow-soft)' }}>
           <div

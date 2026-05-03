@@ -64,6 +64,11 @@ export default function PromptCard({ p, isActive, onClick, onFav, onCopy, modelC
         {p.tags.length > 3 && (
           <span style={{ fontSize: 10, color: 'var(--text-dim)', alignSelf: 'center', fontWeight: 600 }}>+{p.tags.length - 3}</span>
         )}
+        {p.images?.length > 0 && (
+          <span style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 2 }}>
+            🖼️ {p.images.length}
+          </span>
+        )}
       </div>
 
       {/* Footer */}

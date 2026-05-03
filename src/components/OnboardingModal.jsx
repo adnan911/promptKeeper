@@ -2,11 +2,9 @@ import React from 'react';
 
 export default function OnboardingModal({ onChoose }) {
   return (
-    <div className="modal-overlay" style={{ zIndex: 1000 }}>
-      <div className="asu" style={{ 
-        width: '90%', maxWidth: 440, background: 'var(--bg-sub)', border: 'var(--nb-border)', 
-        boxShadow: 'var(--nb-shadow-lg)', padding: '40px 24px', textAlign: 'center',
-        position: 'relative'
+    <div className="modal-overlay">
+      <div className="industrial-modal" style={{ 
+        maxWidth: 440, padding: '40px 24px', textAlign: 'center'
       }} onClick={e => e.stopPropagation()}>
         <div className="ft" style={{ fontSize: 28, fontWeight: 900, marginBottom: 12, color: 'var(--text)', lineHeight: 1.1 }}>
           WELCOME TO PROMPT KEEPER

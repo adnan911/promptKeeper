@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { extractVars, PATS, UNRE } from '../data.js';
-import { Divider } from './UI.jsx';
+import { Divider, VarHighlight, ResolvedHighlight } from './UI.jsx';
 
 const VTYPES = ['text', 'number', 'date', 'email', 'url', 'textarea', 'select'];
 const VM = {
@@ -26,7 +26,14 @@ export default function ForgePanel({ p, onUpdate, onCopy, requestConfirm }) {
   const [vtypes, setVtypes] = useState(p.variableConfig?.types || {});
   const [vopts, setVopts] = useState(p.variableConfig?.options || {});
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [expandedVar, setExpandedVar] = useState(null);
+
+  const handleSave = () => {
+    onUpdate({ ...p, variableConfig: { ...p.variableConfig, types: vtypes, options: vopts } });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   useEffect(() => {
     const nextVals = { ...vals };
@@ -71,30 +78,14 @@ export default function ForgePanel({ p, onUpdate, onCopy, requestConfirm }) {
     onUpdate({ ...p, variableConfig: { ...p.variableConfig, options: nextOpts, types: vtypes } });
   };
 
-  const renderHighOut = (text) => {
-    if (!text) return null;
-    const parts = [];
-    let last = 0, m;
-    const re = new RegExp(UNRE.source, 'g');
-    while ((m = re.exec(text)) !== null) {
-      if (m.index > last) parts.push({ t: text.slice(last, m.index), h: false });
-      parts.push({ t: m[0], h: true });
-      last = m.index + m[0].length;
-    }
-    if (last < text.length) parts.push({ t: text.slice(last), h: false });
-    
-    return parts.map((part, i) => part.h 
-      ? <span key={i} style={{ background: 'rgba(239,160,15,0.15)', color: 'var(--primary)', borderRadius: 4, padding: '0 4px', border: '1px solid rgba(239,160,15,0.3)', fontWeight: 600 }}>{part.t}</span>
-      : <span key={part.t + i}>{part.t}</span>
-    );
-  };
+  // local renderHighOut replaced by VarHighlight
 
   return (
     <div className="forge-container">
       <div className="forge-scroll">
         
         {/* Variables Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 18 }}>🛠️</span>
             <span className="ft" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: 1.5 }}>INPUTS ({vars.length})</span>
@@ -148,7 +139,7 @@ export default function ForgePanel({ p, onUpdate, onCopy, requestConfirm }) {
         )}
 
         {/* Variable Inputs */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {vars.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5, fontStyle: 'italic' }}>
               No variables detected. Use {"{{var}}"}, ${"{var}"}, [var], or %var% in your prompt.
@@ -156,7 +147,7 @@ export default function ForgePanel({ p, onUpdate, onCopy, requestConfirm }) {
           ) : vars.map(v => (
             <div key={v.name} className="forge-input-group">
               <label>
-                <span>{v.name}</span>
+                <span style={{ color: '#F28C28' }}>{v.name}</span>
               </label>
 
               {expandedVar === v.name && (
@@ -221,7 +212,7 @@ export default function ForgePanel({ p, onUpdate, onCopy, requestConfirm }) {
           ))}
         </div>
 
-        <Divider margin="32px 0" />
+        <Divider margin="16px 0" />
 
         {/* Live Preview Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -234,18 +225,25 @@ export default function ForgePanel({ p, onUpdate, onCopy, requestConfirm }) {
 
         {/* Preview Content */}
         <div className="forge-render-container fm">
-          {renderHighOut(rendered)}
+          <ResolvedHighlight text={p.body} vals={vals} />
         </div>
       </div>
 
       {/* Sticky Bottom Actions */}
-      <div style={{ padding: '24px', borderTop: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(10px)' }}>
+      <div style={{ padding: '24px', borderTop: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(10px)', display: 'flex', gap: 12 }}>
         <button 
           className={`btn ${copied ? 'btn-v' : 'btn-p'} btn-fw`}
           onClick={handleCopy}
-          style={{ height: 52, fontSize: 13, fontWeight: 700, letterSpacing: 1 }}
+          style={{ height: 52, fontSize: 13, fontWeight: 700, letterSpacing: 1, flex: 1 }}
         >
-          {copied ? '✓ COPIED' : 'COPY FORGED PROMPT'}
+          {copied ? '✓ COPIED' : 'COPY'}
+        </button>
+        <button 
+          className="btn btn-v btn-fw"
+          onClick={handleSave}
+          style={{ height: 52, fontSize: 13, fontWeight: 700, letterSpacing: 1, flex: 1 }}
+        >
+          {saved ? '✓ SAVED' : 'SAVE'}
         </button>
       </div>
     </div>

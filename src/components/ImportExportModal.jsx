@@ -48,14 +48,11 @@ export default function ImportExportModal({ prompts, onImport, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}>
+    <div className="modal-overlay" onClick={onClose}>
       <div
-        className="asu glass-panel"
+        className="industrial-modal"
         onClick={e => e.stopPropagation()}
-        style={{
-          width: '100%', maxWidth: 600, 
-          margin: '20px',
-        }}
+        style={{ maxWidth: 600 }}
       >
         {/* Header / Tabs */}
         <div style={{ padding: '0 24px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>

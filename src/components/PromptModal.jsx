@@ -75,16 +75,11 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}>
+    <div className="modal-overlay" onClick={onClose}>
       <div
-        className="asu glass-panel"
+        className="industrial-modal"
         onClick={e => e.stopPropagation()}
-        style={{
-          width: '100%', maxWidth: 760, maxHeight: '90vh',
-          display: 'flex', flexDirection: 'column',
-          margin: '20px',
-          position: 'relative'
-        }}
+        style={{ maxHeight: '90vh', maxWidth: 760 }}
       >
         {/* Header */}
         <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, background: 'rgba(255,255,255,0.02)' }}>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { TagPill, ModelBadge, Divider, VarHighlight, UsageChart } from './UI.jsx';
 import { extractVars } from '../data.js';
 import ForgePanel from './ForgePanel.jsx';
 
-export default function DetailPanel({ p, onClose, onEdit, onDelete, onFav, onCopy, onUpdate, onJump, linkedPrompt, isOpen, modelColors, requestConfirm }) {
+export default function DetailPanel({ p, onClose, onEdit, onStudio, onDelete, onFav, onCopy, onUpdate, onJump, linkedPrompt, isOpen, modelColors, requestConfirm }) {
   const [tab, setTab] = useState('details');
   const [varVals, setVarVals] = useState({});
   const [copied, setCopied] = useState(false);
@@ -122,6 +123,30 @@ export default function DetailPanel({ p, onClose, onEdit, onDelete, onFav, onCop
               </div>
             )}
 
+            {/* Images */}
+            {p.images?.length > 0 && (
+              <div style={{ padding: '24px' }}>
+                <span className="lbl" style={{ fontSize: 12, marginBottom: 12 }}>ATTACHED IMAGES</span>
+                <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+                  {p.images.map((img, i) => (
+                    <div key={i} style={{ 
+                      flex: '0 0 120px', height: 120, background: '#000', 
+                      border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, color: 'var(--text-dim)', overflow: 'hidden'
+                    }}>
+                      <img 
+                        src={Capacitor.convertFileSrc(img)} 
+                        alt="attachment" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerText = 'IMG_ERR'; }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Tags */}
             <div style={{ padding: '24px' }}>
               <span className="lbl" style={{ fontSize: 12, marginBottom: 12 }}>TAGS</span>
@@ -159,7 +184,7 @@ export default function DetailPanel({ p, onClose, onEdit, onDelete, onFav, onCop
         <div style={{ padding: '24px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0, background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(10px)' }}>
           <div style={{ display: 'flex', gap: 12 }}>
             <button className="btn btn-c btn-fw" onClick={copyRaw} style={{ flex: 2, height: 52, fontWeight: 600, letterSpacing: 1 }}>COPY RAW</button>
-            <button className="btn btn-v" onClick={() => onEdit(p)} style={{ width: 64, height: 52 }}>✎</button>
+            <button className="btn btn-sm" onClick={() => onStudio(p)} style={{ width: 64, height: 52, background: 'var(--bg-panel)', border: '1px solid var(--primary)', color: 'var(--primary)', fontSize: 18, fontWeight: 900 }} title="Open in Studio (JSON Editor)">⚡</button>
             <button className="btn btn-d" onClick={() => {
               requestConfirm({
                 title: 'DELETE PROMPT',

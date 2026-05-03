@@ -2,8 +2,8 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import Sidebar from './components/Sidebar.jsx';
 import PromptCard from './components/PromptCard.jsx';
 import DetailPanel from './components/DetailPanel.jsx';
-import PromptModal from './components/PromptModal.jsx';
 import ImportExportModal from './components/ImportExportModal.jsx';
+import PromptModal from './components/PromptModal.jsx';
 import ForgeStudio from './components/ForgeStudio.jsx';
 import logo from './assets/logo.jpg';
 import { Toast, ConfirmModal } from './components/UI.jsx';
@@ -125,6 +125,7 @@ export default function App() {
       const exists = prev.find(x => x.id === finalPrompt.id);
       return exists ? prev.map(x => x.id === finalPrompt.id ? finalPrompt : x) : [finalPrompt, ...prev];
     });
+    setIsStudioView(false);
     setShowModal(false);
     setEditPrompt(null);
     toast(p.id && editPrompt ? 'Prompt updated ✓' : 'Prompt created ✓', 'violet');
@@ -143,13 +144,15 @@ export default function App() {
     setPrompts(prev => prev.map(p => p.id === id ? { ...p, fav: !p.fav } : p));
   }, []);
 
+  const [copySuccess, setCopySuccess] = useState(null);
+
   const copyPrompt = useCallback((p, withVars = false, customText = null) => {
     const textToCopy = customText || p.body;
     navigator.clipboard.writeText(textToCopy).catch(() => {});
     setPrompts(prev => prev.map(x =>
       x.id === p.id ? { ...x, uses: x.uses + 1, history: [...(x.history || []), x.uses + 1] } : x
     ));
-    toast(withVars ? '⚡ Copied with variables!' : '✓ Copied to clipboard', 'cyan');
+    setCopySuccess({ title: p.title, body: textToCopy });
   }, []);
 
   const importPrompts = useCallback(imported => {
@@ -264,8 +267,9 @@ export default function App() {
     setPrompts(prev => prev.map(x => x.id === p.id ? p : x));
   }, []);
 
-  function openNew() { setEditPrompt(null); setShowModal(true); }
-  function openEdit(p) { setEditPrompt(p); setShowModal(true); }
+  const openNew = useCallback(() => { setEditPrompt(null); setShowModal(true); setIsStudioView(false); }, []);
+  const openEdit = useCallback((p) => { setEditPrompt(p); setShowModal(true); setIsStudioView(false); }, []);
+  const openStudio = useCallback((p = null) => { setEditPrompt(p); setIsStudioView(true); setShowModal(false); }, []);
 
   const hasFilters = search || tagFilter || modelFilter !== 'All' || catFilter !== 'All';
 
@@ -394,6 +398,7 @@ export default function App() {
           p={activePrompt}
           onClose={() => setActiveId(null)}
           onEdit={openEdit}
+          onStudio={openStudio}
           onDelete={deletePrompt}
           onFav={toggleFav}
           onCopy={copyPrompt}
@@ -406,15 +411,24 @@ export default function App() {
         />
       )}
 
-      {showModal && <PromptModal initial={editPrompt} prompts={prompts} categories={categories} modelColors={modelColors} onSave={savePrompt} onClose={() => { setShowModal(false); setEditPrompt(null); }} onAddCat={addCategory} onAddModel={addModel} />}
-      {showIO && <ImportExportModal prompts={prompts} onImport={importPrompts} onClose={() => setShowIO(false)} />}
-      
       {isStudioView && (
         <ForgeStudio 
+          initial={editPrompt}
           categories={categories} 
           modelColors={modelColors} 
-          onSave={(p) => { savePrompt(p); setIsStudioView(false); }} 
-          onClose={() => setIsStudioView(false)} 
+          onSave={savePrompt} 
+          onClose={() => { setIsStudioView(false); setEditPrompt(null); }} 
+        />
+      )}
+
+      {showModal && (
+        <PromptModal
+          initial={editPrompt}
+          prompts={prompts}
+          categories={categories}
+          modelColors={modelColors}
+          onSave={savePrompt}
+          onClose={() => { setShowModal(false); setEditPrompt(null); }}
         />
       )}
       
@@ -430,12 +444,36 @@ export default function App() {
       )}
 
       <Toast toasts={toasts} />
+      
+      {copySuccess && (
+        <div className="modal-overlay" onClick={() => setCopySuccess(null)}>
+          <div className="industrial-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
+            <div style={{ padding: '24px', borderBottom: '1px solid #1e2128', background: 'rgba(255,255,255,0.02)', textAlign: 'center' }}>
+              <div className="ft" style={{ fontSize: 13, fontWeight: 900, color: '#f0a532', letterSpacing: 2 }}>PROMPT_COPIED</div>
+            </div>
+            <div style={{ padding: '24px' }}>
+              <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 8, fontWeight: 700 }}>CONTENT: {copySuccess.title.toUpperCase()}</div>
+              <div style={{ 
+                background: '#080a10', border: '1px solid #1e2128', padding: '16px', 
+                maxHeight: '160px', overflowY: 'auto', fontSize: 12, color: '#61afef', 
+                fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'pre-wrap', lineHeight: 1.5
+              }}>
+                {copySuccess.body}
+              </div>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #1e2128', background: 'rgba(255,255,255,0.02)', display: 'flex', justifyContent: 'center' }}>
+              <button className="btn btn-v btn-fw" onClick={() => setCopySuccess(null)} style={{ height: 48, fontWeight: 900 }}>DISMISS</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!onboardingDone && <OnboardingModal onChoose={handleOnboarding} />}
 
       {!showModal && !showIO && !isStudioView && !activePrompt && (
         <div className={`fab-container ${fabOpen ? 'open' : ''}`} style={{ right: activePrompt && window.innerWidth > 768 ? 432 : 32 }}>
           <div className="fab-menu">
-            <button className="fab-item" onClick={() => { setFabOpen(false); setIsStudioView(true); }}>
+            <button className="fab-item" onClick={() => { setFabOpen(false); openStudio(null); }}>
               <div className="fab-icon">⚡</div>
               JSON EDITOR
             </button>
