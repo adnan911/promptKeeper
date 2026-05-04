@@ -31,6 +31,17 @@ export default function PromptCard({ p, isActive, onClick, onFav, onCopy, modelC
         WebkitBackdropFilter: 'blur(16px)'
       }}
     >
+      {p.thumbnail && (
+        <div style={{ 
+          width: 'calc(100% + 32px)', 
+          height: 120, 
+          margin: '-16px -16px 0 -16px', 
+          borderBottom: '1px solid var(--border-light)' 
+        }}>
+          <img src={p.thumbnail} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      )}
+      
       {/* Top row: Title + Fav */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <div className="ft" style={{ fontSize: 16, fontWeight: 700, color: isActive ? '#fff' : 'var(--text)', lineHeight: 1.2, textTransform: 'uppercase', letterSpacing: 0.5 }}>

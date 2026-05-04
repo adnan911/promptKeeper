@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { TagPill, ModelBadge, StatRow, Divider } from './UI.jsx';
 import { MODEL_COLORS, PREMIUM_GRADIENTS } from '../data.js';
 import logo from '../assets/logo.jpg';
@@ -29,11 +29,18 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
     '#1E4445', // Deep Teal
   ];
 
-  const allTags = [...new Set(prompts.flatMap(p => p.tags))].sort();
-  const topTag = allTags.map(t => ({ t, n: prompts.filter(p => p.tags.includes(t)).length })).sort((a, b) => b.n - a.n)[0];
-
-  const catCount = c => c === 'All' ? prompts.length : prompts.filter(p => p.category === c).length;
-  const modelCount = m => prompts.filter(p => p.model === m).length;
+  const { allTags, catCounts, modelCounts } = useMemo(() => {
+    const tags = [...new Set(prompts.flatMap(p => p.tags))].sort();
+    const cCounts = { All: prompts.length };
+    const mCounts = {};
+    
+    prompts.forEach(p => {
+      cCounts[p.category] = (cCounts[p.category] || 0) + 1;
+      mCounts[p.model] = (mCounts[p.model] || 0) + 1;
+    });
+    
+    return { allTags: tags, catCounts: cCounts, modelCounts: mCounts };
+  }, [prompts]);
 
   return (
     <div className={`sidebar-mobile ${isOpen ? 'open' : ''}`} style={{
@@ -57,31 +64,31 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
         className="show-mobile-flex"
       >✕</button>
       {/* Logo */}
-      <div style={{ padding: '32px 24px 24px', borderBottom: '1px solid var(--border-light)' }}>
+      <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--border-light)' }}>
         <img src={logo} alt="Prompt Keeper" style={{ width: '100%', display: 'block', borderRadius: 'var(--radius-sm)', opacity: 0.9 }} />
       </div>
 
       {/* Stats */}
-      <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-light)' }}>
-        <StatRow label="TOTAL PROMPTS" value={prompts.length} />
-        <StatRow label="FAVORITES" value={prompts.filter(p => p.fav).length} color="var(--primary)" />
+      <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', gap: 12 }}>
+        <div style={{ flex: 1 }}><StatRow label="PROMPTS" value={prompts.length} /></div>
+        <div style={{ flex: 1 }}><StatRow label="FAVS" value={prompts.filter(p => p.fav).length} color="var(--primary)" /></div>
       </div>
 
-      <div style={{ padding: '24px 0', flex: 1 }}>
-        <div style={{ padding: '0 16px 24px' }}>
-          <button className="btn btn-c btn-fw" onClick={onNew} style={{ padding: '14px', fontSize: 13, gap: 10, borderRadius: 0, fontWeight: 900 }}>
+      <div style={{ padding: '16px 0', flex: 1 }}>
+        <div style={{ padding: '0 16px 16px' }}>
+          <button className="btn btn-c btn-fw" onClick={onNew} style={{ padding: '12px', fontSize: 13, gap: 10, borderRadius: 0, fontWeight: 900 }}>
             <span style={{ fontSize: 18 }}>+</span> NEW PROMPT
           </button>
         </div>
 
         {/* Collections Box */}
-        <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius)', margin: '0 16px 20px', padding: '16px 12px', boxShadow: 'var(--shadow-soft)' }}>
+        <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', margin: '0 10px 10px', padding: '8px 8px', boxShadow: 'var(--shadow-soft)' }}>
           <div
             className="ft"
             onClick={() => setCatsExpanded(x => !x)}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px 12px', cursor: 'pointer' }}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 6px 8px', cursor: 'pointer' }}
           >
-            <div style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Collections</div>
+            <div style={{ fontSize: 10, color: 'var(--text-sub)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Collections</div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <button 
                 className="btn btn-sm" 
@@ -125,20 +132,20 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
               className={`si${isActive ? ' act' : ''}`}
               onClick={() => { setCatFilter(c); setTagFilter(''); }}
               style={{ 
-                marginBottom: 6, 
+                marginBottom: 2, 
                 background: isActive ? `${catCol}20` : 'transparent',
                 color: isActive ? catCol : 'var(--text)',
                 border: isActive ? `1px solid ${catCol}50` : '1px solid transparent',
                 position: 'relative',
-                padding: '12px 14px',
-                transition: 'all 0.2s ease',
+                padding: '6px 10px',
+                transition: 'all 0.1s ease',
                 borderRadius: 'var(--radius-sm)'
               }}
             >
               <span className="ft" style={{ fontSize: 13, fontWeight: 500 }}>{c === 'All' ? '◈ ALL PROMPTS' : c.toUpperCase()}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
                 <span style={{ fontSize: 12, fontWeight: 600, opacity: isActive ? 1 : 0.6 }}>
-                  {catCount(c)}
+                  {catCounts[c] || 0}
                 </span>
                 {c !== 'All' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -215,11 +222,11 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
         </div>
 
         {/* AI Models Box */}
-        <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius)', margin: '0 16px 20px', padding: '16px 12px', boxShadow: 'var(--shadow-soft)' }}>
+        <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', margin: '0 10px 10px', padding: '8px 8px', boxShadow: 'var(--shadow-soft)' }}>
         <div 
           className="ft" 
           onClick={() => setModelsExpanded(x => !x)}
-          style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 600, padding: '0 8px 12px', textTransform: 'uppercase', letterSpacing: 0.5, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          style={{ fontSize: 10, color: 'var(--text-sub)', fontWeight: 700, padding: '0 6px 8px', textTransform: 'uppercase', letterSpacing: 0.5, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
         >
           <span>AI Models</span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -261,9 +268,9 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
             <div
               className={`si${modelFilter === 'All' ? ' act' : ''}`}
               onClick={() => setModelFilter('All')}
-              style={{ marginBottom: 6, borderRadius: 'var(--radius-sm)' }}
+              style={{ marginBottom: 2, borderRadius: 'var(--radius-sm)', padding: '6px 10px' }}
             >
-              <span className="ft" style={{ fontSize: 13, fontWeight: 500 }}>ALL MODELS</span>
+              <span className="ft" style={{ fontSize: 12, fontWeight: 500 }}>ALL MODELS</span>
               <span style={{ fontSize: 12, fontWeight: 600 }}>{prompts.length}</span>
             </div>
             {Object.entries(modelColors).map(([m, c]) => {
@@ -274,16 +281,17 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
                   className={`si${isAM ? ' act' : ''}`}
                   onClick={() => setModelFilter(m)}
                   style={{ 
-                    marginBottom: 6, 
+                    marginBottom: 2, 
                     position: 'relative',
                     borderRadius: 'var(--radius-sm)',
-                    ...(isAM ? { background: `${c}20`, color: c, border: `1px solid ${c}50` } : { background: 'transparent' }) 
+                    ...(isAM ? { background: `${c}20`, color: c, border: `1px solid ${c}50` } : { background: 'transparent', border: '1px solid transparent' }),
+                    padding: '6px 10px'
                   }}
                 >
                   <span className="ft" style={{ fontSize: 13, fontWeight: 500 }}>{m.toUpperCase()}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
                     <span style={{ fontSize: 12, fontWeight: 600, opacity: isAM ? 1 : 0.6 }}>
-                      {modelCount(m)}
+                      {modelCounts[m] || 0}
                     </span>
                     {editingCat === m ? (
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -377,7 +385,7 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
 
         {/* Tags Box */}
         {allTags.length > 0 && (
-          <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius)', margin: '0 16px 16px', padding: '16px 12px', boxShadow: 'var(--shadow-soft)' }}>
+          <div style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', margin: '0 12px 12px', padding: '12px 10px', boxShadow: 'var(--shadow-soft)' }}>
             <div
               className="ft"
               onClick={() => setTagsExpanded(x => !x)}
@@ -448,16 +456,16 @@ export default function Sidebar({ prompts, categories, catFilter, setCatFilter, 
         )}
       </div>
 
-      <div style={{ padding: '24px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--bg-panel)', backdropFilter: 'blur(12px)' }}>
+      <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--bg-panel)', backdropFilter: 'blur(12px)' }}>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-g btn-fw" onClick={onImportExport} style={{ padding: '12px', fontSize: 12, flex: 1 }}>
-            ⇅ DATA MANAGEMENT
+          <button className="btn btn-g btn-fw" onClick={onImportExport} style={{ padding: '10px', fontSize: 11, flex: 1 }}>
+            ⇅ DATA MGMT
           </button>
-          <button className="btn btn-g" onClick={toggleTheme} title="Toggle Dark Mode" style={{ width: 44, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button className="btn btn-g" onClick={toggleTheme} title="Toggle Dark Mode" style={{ width: 40, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
         </div>
-        <div className="ft hide-mobile" style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', paddingTop: 8, fontWeight: 600, letterSpacing: 0.5 }}>
+        <div className="ft hide-mobile" style={{ fontSize: 9, color: 'var(--text-dim)', textAlign: 'center', fontWeight: 600, letterSpacing: 0.5 }}>
           ⌘K SEARCH &nbsp;//&nbsp; ⌘N NEW
         </div>
       </div>

@@ -73,6 +73,9 @@ export default function App() {
   });
 
   const activePrompt = useMemo(() => prompts.find(p => p.id === activeId), [prompts, activeId]);
+  const linkedPrompt = useMemo(() => 
+    activePrompt?.linkedPromptId ? prompts.find(x => String(x.id) === String(activePrompt.linkedPromptId)) : null
+  , [prompts, activePrompt]);
 
   const filtered = useMemo(() => {
     let r = [...prompts];
@@ -115,21 +118,33 @@ export default function App() {
     return newTags;
   }, []);
 
-  const savePrompt = useCallback(p => {
-    const finalPrompt = {
+  // Centralized Sanity Check for Prompt Data
+  const sanitizePrompt = useCallback((p) => {
+    let cleanedImages = p.images?.length > 0 ? [p.images[0]] : [];
+    let cleanedThumbnail = cleanedImages[0] || p.thumbnail || null;
+    if (cleanedThumbnail && cleanedImages.length === 0) cleanedImages = [cleanedThumbnail];
+
+    return {
       ...p,
-      tags: autoTag(p.body, p.tags),
-      presets: p.presets || [] // Support for presets (Idea 2)
+      images: cleanedImages,
+      thumbnail: cleanedThumbnail,
+      tags: autoTag(p.body, p.tags || []),
+      presets: p.presets || []
     };
+  }, [autoTag]);
+
+  const savePrompt = useCallback(p => {
+    const finalPrompt = sanitizePrompt(p);
+    
     setPrompts(prev => {
-      const exists = prev.find(x => x.id === finalPrompt.id);
-      return exists ? prev.map(x => x.id === finalPrompt.id ? finalPrompt : x) : [finalPrompt, ...prev];
+      const exists = prev.find(x => String(x.id) === String(finalPrompt.id));
+      return exists ? prev.map(x => String(x.id) === String(finalPrompt.id) ? finalPrompt : x) : [finalPrompt, ...prev];
     });
     setIsStudioView(false);
     setShowModal(false);
     setEditPrompt(null);
     toast(p.id && editPrompt ? 'Prompt updated ✓' : 'Prompt created ✓', 'violet');
-  }, [editPrompt, autoTag]);
+  }, [editPrompt, sanitizePrompt]);
 
   const deletePrompt = useCallback(id => {
     setPrompts(prev => prev
@@ -141,7 +156,7 @@ export default function App() {
   }, []);
 
   const toggleFav = useCallback(id => {
-    setPrompts(prev => prev.map(p => p.id === id ? { ...p, fav: !p.fav } : p));
+    setPrompts(prev => prev.map(p => String(p.id) === String(id) ? { ...p, fav: !p.fav } : p));
   }, []);
 
   const [copySuccess, setCopySuccess] = useState(null);
@@ -264,8 +279,9 @@ export default function App() {
   }, [modelFilter]);
 
   const updatePrompt = useCallback(p => {
-    setPrompts(prev => prev.map(x => x.id === p.id ? p : x));
-  }, []);
+    const cleaned = sanitizePrompt(p);
+    setPrompts(prev => prev.map(x => String(x.id) === String(cleaned.id) ? cleaned : x));
+  }, [sanitizePrompt]);
 
   const openNew = useCallback(() => { setEditPrompt(null); setShowModal(true); setIsStudioView(false); }, []);
   const openEdit = useCallback((p) => { setEditPrompt(p); setShowModal(true); setIsStudioView(false); }, []);
@@ -328,7 +344,7 @@ export default function App() {
         }}>
           {/* Collection Info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span className="ft" style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            <span className="ft" style={{ fontSize: 12, color: 'var(--text-sub)', fontWeight: 600, whiteSpace: 'nowrap' }}>
               {filtered.length} ITEMS
             </span>
           </div>
@@ -342,10 +358,10 @@ export default function App() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder={window.innerWidth <= 768 ? "SEARCH..." : "SEARCH PROMPTS... ⌘K"}
-                style={{ paddingLeft: 40, height: 40 }}
+                style={{ paddingLeft: 40, height: 40, fontSize: 12 }}
               />
             </div>
-            <select value={sort} onChange={e => setSort(e.target.value)} style={{ width: 130, height: 40, flexShrink: 0 }}>
+            <select value={sort} onChange={e => setSort(e.target.value)} style={{ width: 130, height: 40, flexShrink: 0, fontSize: 12 }}>
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label.toUpperCase()}</option>)}
             </select>
           </div>
@@ -404,7 +420,7 @@ export default function App() {
           onCopy={copyPrompt}
           onUpdate={updatePrompt}
           onJump={setActiveId}
-          linkedPrompt={prompts.find(x => x.id == activePrompt.linkedPromptId)}
+          linkedPrompt={linkedPrompt}
           isOpen={!!activePrompt}
           modelColors={modelColors}
           requestConfirm={requestConfirm}

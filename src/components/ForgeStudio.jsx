@@ -90,13 +90,27 @@ export default function ForgeStudio({ initial, onSave, onClose, categories, mode
   }, [jsonInput, vals]);
 
   const handleAttachImage = async () => {
-    try {
-      const image = await Camera.getPhoto({ quality: 90, allowEditing: false, resultType: CameraResultType.Uri });
-      const fileName = `img_${Date.now()}.jpg`;
-      await Filesystem.copy({ from: image.path, to: fileName, toDirectory: Directory.Data });
-      const uriResult = await Filesystem.getUri({ path: fileName, directory: Directory.Data });
-      setImages(prev => [...prev, uriResult.uri]);
-    } catch (e) { console.error("Camera error", e); }
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const image = await Camera.getPhoto({ quality: 90, allowEditing: false, resultType: CameraResultType.Uri });
+        const fileName = `img_${Date.now()}.jpg`;
+        await Filesystem.copy({ from: image.path, to: fileName, toDirectory: Directory.Data });
+        const uriResult = await Filesystem.getUri({ path: fileName, directory: Directory.Data });
+        setImages([uriResult.uri]);
+      } catch (e) { console.error("Camera error", e); }
+    } else {
+      document.getElementById('studio-file-attach').click();
+    }
+  };
+
+  const handleWebUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setImages([ev.target.result]);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = () => {
@@ -104,7 +118,13 @@ export default function ForgeStudio({ initial, onSave, onClose, categories, mode
     onSave({
       ...initial,
       id: initial?.id || Date.now(),
-      title, body: jsonInput, category, model, vals, images,
+      title, 
+      body: jsonInput, 
+      category, 
+      model, 
+      vals, 
+      images,
+      thumbnail: images[0] || initial?.thumbnail || null,
       created: initial?.created || Date.now(),
       tags: initial?.tags || ['forge'],
     });
@@ -128,7 +148,28 @@ export default function ForgeStudio({ initial, onSave, onClose, categories, mode
         <div className="studio-topbar-title">Studio Core</div>
         <div className="studio-topbar-actions">
           <div className="studio-icon-btn" onClick={handleSave} title="Save"><Ic n="save" /></div>
-          <div className="studio-icon-btn" onClick={handleAttachImage} title="Attach"><Ic n="attach" /></div>
+          <div 
+            className="studio-icon-btn" 
+            onClick={handleAttachImage} 
+            title="Attach"
+            style={{ position: 'relative', overflow: 'visible' }}
+          >
+            <Ic n="attach" />
+            {images.length > 0 && (
+              <div style={{ 
+                position: 'absolute', bottom: -2, left: 4, right: 4, 
+                height: 3, background: '#f0a532', borderRadius: 1.5,
+                boxShadow: '0 0 8px rgba(240, 165, 50, 0.6)'
+              }} />
+            )}
+            <input 
+              id="studio-file-attach" 
+              type="file" 
+              accept="image/*" 
+              onChange={handleWebUpload} 
+              style={{ display: 'none' }} 
+            />
+          </div>
         </div>
       </div>
 
@@ -194,15 +235,25 @@ export default function ForgeStudio({ initial, onSave, onClose, categories, mode
             <ResolvedHighlight text={jsonInput} vals={vals} />
           </div>
           
-          <div className="studio-section-label">Attached Images</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '0 16px' }}>
-            {images.map(img => (
-              <div key={img} style={{ position: 'relative', width: 80, height: 80, border: '1px solid #1e2128', borderRadius: 8, overflow: 'hidden' }}>
-                <img src={Capacitor.convertFileSrc(img)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button onClick={() => setImages(prev => prev.filter(i => i !== img))} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(239,68,68,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, fontSize: 12, cursor: 'pointer' }}>×</button>
+          <div className="studio-section-label">Attached Image</div>
+          <div style={{ padding: '0 16px' }}>
+            {images.length > 0 ? (
+              <div style={{ position: 'relative', width: '100%', height: 160, border: '1px solid #1e2128', borderRadius: 8, overflow: 'hidden', background: '#000' }}>
+                <img 
+                  src={images[0].startsWith('data:') || images[0].startsWith('blob:') ? images[0] : Capacitor.convertFileSrc(images[0])} 
+                  alt="Attachment" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
+                <button 
+                  onClick={() => setImages([])} 
+                  style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(239,68,68,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >×</button>
               </div>
-            ))}
-            {images.length === 0 && <div style={{ fontSize: 11, color: '#4a5060' }}>No images attached</div>}
+            ) : (
+              <div style={{ padding: 24, textAlign: 'center', border: '1px dashed #1e2128', borderRadius: 8, fontSize: 11, color: '#4a5060' }}>
+                No image attached.
+              </div>
+            )}
           </div>
         </div>
 

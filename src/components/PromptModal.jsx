@@ -31,6 +31,44 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
     setTagInput('');
   }
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const max_dim = 800;
+        
+        if (width > height) {
+          if (width > max_dim) {
+            height *= max_dim / width;
+            width = max_dim;
+          }
+        } else {
+          if (height > max_dim) {
+            width *= max_dim / height;
+            height = max_dim;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        setForm(prev => ({ ...prev, thumbnail: dataUrl, images: [dataUrl] }));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   function toggleJsonMode() {
     if (jsonMode) {
       try {
@@ -99,7 +137,7 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {error && (
               <div style={{ background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '12px 16px', fontSize: 13, fontWeight: 600, boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)' }}>
                 ⚠ ERROR: {error.toUpperCase()}
@@ -108,7 +146,7 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
 
             {jsonMode ? (
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <label className="lbl" style={{ marginBottom: 12 }}>RAW JSON DATA</label>
+                <label className="lbl" style={{ marginBottom: 8 }}>RAW JSON DATA</label>
                 <textarea
                   value={jsonText}
                   onChange={e => { setJsonText(e.target.value); setError(''); }}
@@ -131,7 +169,7 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
             ) : (
               <>
                 <div>
-                  <label className="lbl" style={{ marginBottom: 12 }}>PROMPT TITLE</label>
+                  <label className="lbl" style={{ marginBottom: 8 }}>PROMPT TITLE</label>
                   <input
                     value={form.title}
                     onChange={e => { setForm({ ...form, title: e.target.value }); setError(''); }}
@@ -140,9 +178,9 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
-                    <label className="lbl" style={{ marginBottom: 12 }}>COLLECTION</label>
+                    <label className="lbl" style={{ marginBottom: 8 }}>COLLECTION</label>
                     <input 
                       list="cat-list" 
                       value={form.category} 
@@ -155,7 +193,7 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
                     </datalist>
                   </div>
                   <div>
-                    <label className="lbl" style={{ marginBottom: 12 }}>TARGET AI MODEL</label>
+                    <label className="lbl" style={{ marginBottom: 8 }}>TARGET AI MODEL</label>
                     <input 
                       list="model-list" 
                       value={form.model} 
@@ -170,7 +208,7 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
                 </div>
 
                 <div>
-                  <label className="lbl" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <label className="lbl" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <span>PROMPT CONTENT</span>
                     <span style={{ color: 'var(--text-sub)', fontSize: 11, fontWeight: 600, letterSpacing: 0.5 }}>
                       TIP: USE {'{{VAR}}'} FOR INPUTS
@@ -195,7 +233,7 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
                 </div>
 
                 <div style={{ position: 'relative' }}>
-                  <label className="lbl" style={{ marginBottom: 12 }}>SEARCH TAGS</label>
+                  <label className="lbl" style={{ marginBottom: 8 }}>SEARCH TAGS</label>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <input
                       value={tagInput}
@@ -237,7 +275,29 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
                 </div>
 
                 <div>
-                  <label className="lbl" style={{ marginBottom: 12 }}>ADDITIONAL NOTES</label>
+                  <label className="lbl" style={{ marginBottom: 8 }}>THUMBNAIL IMAGE</label>
+                  {form.thumbnail ? (
+                    <div style={{ position: 'relative', width: 120, height: 120, borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                      <img src={form.thumbnail} alt="Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <button 
+                        onClick={() => setForm(f => ({ ...f, thumbnail: null, images: [] }))}
+                        style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(239,68,68,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
+                      >×</button>
+                    </div>
+                  ) : (
+                    <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px dashed var(--border-light)', padding: '16px', borderRadius: 'var(--radius-sm)' }}>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleImageUpload} 
+                        style={{ fontSize: 13, color: 'var(--text-sub)' }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="lbl" style={{ marginBottom: 8 }}>ADDITIONAL NOTES</label>
                   <textarea
                     value={form.notes || ''}
                     onChange={e => setForm({ ...form, notes: e.target.value })}
@@ -247,7 +307,7 @@ export default function PromptModal({ initial, prompts, categories, modelColors,
                 </div>
 
                 <div>
-                  <label className="lbl" style={{ marginBottom: 12 }}>LINK TO RELATED PROMPT (CHAINING)</label>
+                  <label className="lbl" style={{ marginBottom: 8 }}>LINK TO RELATED PROMPT (CHAINING)</label>
                   <select 
                     value={form.linkedPromptId || ''} 
                     onChange={e => setForm({ ...form, linkedPromptId: e.target.value || null })} 

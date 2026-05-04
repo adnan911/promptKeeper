@@ -29,6 +29,44 @@ export default function ForgePanel({ p, onUpdate, onCopy, requestConfirm }) {
   const [saved, setSaved] = useState(false);
   const [expandedVar, setExpandedVar] = useState(null);
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const max_dim = 800;
+        
+        if (width > height) {
+          if (width > max_dim) {
+            height *= max_dim / width;
+            width = max_dim;
+          }
+        } else {
+          if (height > max_dim) {
+            width *= max_dim / height;
+            height = max_dim;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        onUpdate({ ...p, thumbnail: dataUrl, images: [dataUrl] });
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = () => {
     onUpdate({ ...p, variableConfig: { ...p.variableConfig, types: vtypes, options: vopts } });
     setSaved(true);
@@ -84,11 +122,58 @@ export default function ForgePanel({ p, onUpdate, onCopy, requestConfirm }) {
     <div className="forge-container">
       <div className="forge-scroll">
         
-        {/* Variables Header */}
+        {/* Thumbnail Section */}
+        <div style={{ marginBottom: 12, padding: '10px', background: 'rgba(0,0,0,0.15)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 14 }}>🖼️</span>
+              <span className="ft" style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: 1.2 }}>PROMPT THUMBNAIL</span>
+            </div>
+            <label style={{ cursor: 'pointer', fontSize: 10, color: 'var(--primary)', fontWeight: 600 }}>
+              {p.thumbnail ? 'UPDATE' : 'ADD'}
+              <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+            </label>
+          </div>
+          {p.thumbnail && (
+            <div style={{ position: 'relative', width: '100%', height: 120, borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+              <img src={p.thumbnail} alt="Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+              <button 
+                onClick={() => {
+                  const newImages = (p.images || []).filter(img => img !== p.thumbnail);
+                  onUpdate({ ...p, thumbnail: null, images: newImages });
+                }}
+                style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(239,68,68,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
+              >×</button>
+            </div>
+          )}
+          {!p.thumbnail && (
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', padding: '12px 0', border: '1px dashed var(--border-light)', borderRadius: 'var(--radius-sm)' }}>
+              No thumbnail set
+            </div>
+          )}
+        </div>
+        
+        {/* Live Preview Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>🛠️</span>
-            <span className="ft" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: 1.5 }}>INPUTS ({vars.length})</span>
+            <span style={{ fontSize: 16 }}>✨</span>
+            <span className="ft" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: 1.5 }}>LIVE OUTPUT</span>
+          </div>
+          {isValidJson && <span className="forge-badge forge-badge-valid">JSON VALID</span>}
+        </div>
+
+        {/* Preview Content */}
+        <div className="forge-render-container fm" style={{ marginBottom: 24 }}>
+          <ResolvedHighlight text={p.body} vals={vals} />
+        </div>
+
+        <Divider margin="16px 0" />
+
+        {/* Variables Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 16 }}>🛠️</span>
+            <span className="ft" style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: 1.2 }}>INPUTS ({vars.length})</span>
           </div>
           <button 
             className="btn btn-sm btn-p" 
@@ -139,7 +224,7 @@ export default function ForgePanel({ p, onUpdate, onCopy, requestConfirm }) {
         )}
 
         {/* Variable Inputs */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {vars.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5, fontStyle: 'italic' }}>
               No variables detected. Use {"{{var}}"}, ${"{var}"}, [var], or %var% in your prompt.
@@ -212,21 +297,6 @@ export default function ForgePanel({ p, onUpdate, onCopy, requestConfirm }) {
           ))}
         </div>
 
-        <Divider margin="16px 0" />
-
-        {/* Live Preview Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 16 }}>✨</span>
-            <span className="ft" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: 1.5 }}>LIVE OUTPUT</span>
-          </div>
-          {isValidJson && <span className="forge-badge forge-badge-valid">JSON VALID</span>}
-        </div>
-
-        {/* Preview Content */}
-        <div className="forge-render-container fm">
-          <ResolvedHighlight text={p.body} vals={vals} />
-        </div>
       </div>
 
       {/* Sticky Bottom Actions */}

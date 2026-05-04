@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { getTagColor, MODEL_COLORS, UNRE } from '../data.js';
 
 export function TagPill({ tag, active, onClick, removable, onRemove, size = 'md' }) {
@@ -91,7 +91,7 @@ export function StatRow({ label, value, color }) {
   );
 }
 
-export function VarHighlight({ text }) {
+export const VarHighlight = React.memo(function VarHighlight({ text }) {
   if (!text) return null;
   const parts = text.split(UNRE);
   return (
@@ -111,9 +111,9 @@ export function VarHighlight({ text }) {
       )}
     </>
   );
-}
+});
 
-export function ResolvedHighlight({ text, vals = {} }) {
+export const ResolvedHighlight = React.memo(function ResolvedHighlight({ text, vals = {} }) {
   if (!text) return null;
   const parts = text.split(UNRE);
   return (
@@ -148,7 +148,7 @@ export function ResolvedHighlight({ text, vals = {} }) {
       })}
     </>
   );
-}
+});
 
 export function UsageChart({ history = [], uses }) {
   const data = history.length ? history : [uses];
